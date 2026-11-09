@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pocket Reverb — live guitar reverb</title>
+<style>
+  :root{
+    --bg:#15110e; --panel:#211a15; --edge:#3a2e25; --cream:#efe3cf; --dim:#a8977f;
+    --amber:#f2a541; --red:#e0563b; --green:#7ccf7a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -10%,#2b211a,var(--bg) 60%);
+    color:var(--cream);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex;justify-content:center;padding:20px}
+  .amp{width:100%;max-width:440px}
+  h1{font-family:Georgia,serif;font-style:italic;font-weight:normal;font-size:30px;margin:4px 0 2px;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:18px}
+  .panel{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:18px;margin-bottom:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+  #power{width:100%;padding:18px;border-radius:14px;border:2px solid var(--amber);background:transparent;
+    color:var(--amber);font-size:18px;font-weight:600;letter-spacing:1px;cursor:pointer}
+  #power.on{background:var(--amber);color:#1a120b;box-shadow:0 0 28px rgba(242,165,65,.45)}
+  .status{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:10px}
+  .lamp{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4a3b30;margin-right:6px;vertical-align:middle}
+  .lamp.on{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .lamp.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+  .meter{height:8px;border-radius:4px;background:#0f0c0a;overflow:hidden;margin-top:12px}
+  .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--amber) 70%,var(--red));transition:width .05s}
+  .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .presets button{padding:10px 4px;border-radius:10px;border:1px solid var(--edge);background:#1a1410;color:var(--cream);font-size:13px;cursor:pointer}
+  .presets button.active{border-color:var(--amber);color:var(--amber)}
+  .ctl{margin:16px 0 4px}
+  .ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--cream);margin-bottom:2px}
+  .ctl label b{color:var(--amber);font-weight:500;font-size:13px}
+  .hint{font-size:12px;color:var(--dim);margin-bottom:6px}
+  input[type=range]{width:100%;accent-color:var(--amber)}
+  .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:-2px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;margin-top:16px}
+  .row small{color:var(--dim);font-size:12px}
+  input[type=checkbox]{width:22px;height:22px;accent-color:var(--amber);flex:none}
+  .note{font-size:12px;color:var(--dim);line-height:1.55}
+  .note b{color:var(--amber);font-weight:500}
+  .err{color:var(--red);font-size:13px;margin-top:10px;display:none}
+  .sec{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+  select{width:100%;padding:10px;border-radius:10px;background:#1a1410;color:var(--cream);border:1px solid var(--edge);font-size:14px}
+  button.big2{width:100%;margin-top:10px;padding:14px;border-radius:12px;border:1px solid var(--amber);background:transparent;color:var(--amber);font-size:15px;font-weight:600;cursor:pointer}
+  button.big2:disabled{opacity:.6}
+  details summary{cursor:pointer;font-size:14px;color:var(--amber);list-style:none}
+  details summary::before{content:"▸ ";} details[open] summary::before{content:"▾ ";}
+  #learnState{font-size:12px;color:var(--dim);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="amp">
+  <h1>Pocket Reverb</h1>
+  <div class="sub">Play into your phone's mic. Hear the room grow.</div>
+
+  <!-- 1. Start -->
+  <div class="panel">
+    <button id="power">▶ START</button>
+    <div class="status">
+      <span><span class="lamp" id="lamp"></span><span id="stateTxt">Off</span></span>
+      <span id="latency">latency —</span>
+    </div>
+    <div class="meter"><i id="meter"></i></div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- 2. Background noise -->
+  <div class="panel">
+    <div class="sec">Step 1 · Remove background noise</div>
+    <div class="hint">Tap the button, then don't play or talk for 3 seconds. The app learns what your room sounds like and removes it.</div>
+    <button id="learn" class="big2">🎧 Learn my room's noise</button>
+    <div id="learnState">Not learned yet.</div>
+
+    <div class="ctl">
+      <label>Noise removal <b id="nrV"></b></label>
+      <div class="hint">How hard to remove background noise.</div>
+      <input id="nr" type="range" min="0" max="100">
+      <div class="ends"><span>Off</span><span>Strong</span></div>
+    </div>
+
+    <div class="ctl">
+      <label>Microphone</label>
+      <div class="hint">Choose <b style="color:var(--amber)">iPhone Microphone</b> and keep the phone close to the guitar.</div>
+      <select id="mic"><option value="">Default (tap START to see the list)</option></select>
+    </div>
+  </div>
+
+  <!-- 3. Reverb -->
+  <div class="panel">
+    <div class="sec">Step 2 · Shape your reverb</div>
+    <div class="hint">Pick a style to start from, then fine-tune below.</div>
+    <div class="presets" id="presets"></div>
+
+    <div class="ctl">
+      <label>How soon it comes back <b id="preV"></b></label>
+      <div class="hint">The gap between plucking a string and hearing the reverb.</div>
+      <input id="pre" type="range" min="0" max="500" step="5">
+      <div class="ends"><span>Right away</span><span>Half a second</span></div>
+    </div>
+
+    <div class="ctl">
+      <label>How long it lasts <b id="decayV"></b></label>
+      <div class="hint">How long the sound keeps ringing after you play.</div>
+      <input id="decay" type="range" min="3" max="80">
+      <div class="ends"><span>Short</span><span>Very long</span></div>
+    </div>
+
+    <div class="ctl">
+      <label>How much reverb <b id="mixV"></b></label>
+      <input id="mix" type="range" min="0" max="100">
+      <div class="ends"><span>A little</span><span>A lot</span></div>
+    </div>
+
+    <div class="ctl">
+      <label>Volume <b id="volV"></b></label>
+      <input id="vol" type="range" min="0" max="400">
+      <div class="ends"><span>Quiet</span><span>Loud</span></div>
+    </div>
+  </div>
+
+  <!-- 4. More -->
+  <div class="panel">
+    <details>
+      <summary>More settings (optional)</summary>
+
+      <div class="ctl">
+        <label>Brightness <b id="toneV"></b></label>
+        <div class="hint">Darker = warmer, softer reverb. Brighter = sparkly.</div>
+        <input id="tone" type="range" min="1500" max="12000" step="100">
+        <div class="ends"><span>Darker</span><span>Brighter</span></div>
+      </div>
+
+      <div class="ctl">
+        <label>Echo amount <b id="echoV"></b></label>
+        <div class="hint">Adds clear repeats of your notes (like shouting in a canyon).</div>
+        <input id="echo" type="range" min="0" max="100">
+      </div>
+      <div class="ctl">
+        <label>Gap between echoes <b id="timeV"></b></label>
+        <input id="time" type="range" min="60" max="900">
+      </div>
+      <div class="ctl">
+        <label>Number of echoes <b id="fbV"></b></label>
+        <input id="fb" type="range" min="0" max="85">
+        <div class="ends"><span>One</span><span>Many</span></div>
+      </div>
+
+      <div class="ctl">
+        <label>Mic boost <b id="gainV"></b></label>
+        <div class="hint">Turn up if the bar at the top barely moves when you play.</div>
+        <input id="gain" type="range" min="0" max="600">
+      </div>
+
+      <div class="ctl">
+        <label>Ignore very quiet sounds <span><span class="lamp" id="gateLamp"></span><b id="gateV"></b></span></label>
+        <div class="hint">Light turns green while the app hears you playing. Lower this if soft notes get cut off.</div>
+        <input id="gate" type="range" min="0" max="100">
+      </div>
+
+      <div class="row"><span>Guitar focus<br><small>Cuts very low rumble and very high hiss.</small></span><input id="focus" type="checkbox"></div>
+      <div class="row"><span>iPhone voice isolation<br><small>Uses Apple's own noise removal. Strong, but can make the guitar sound thin.</small></span><input id="apple" type="checkbox"></div>
+      <div class="row"><span>Hear my guitar through the headphones too<br><small>Only for electric guitar plugged in.</small></span><input id="dry" type="checkbox"></div>
+    </details>
+  </div>
+
+  <div class="panel note">
+    <b>Best results:</b> phone 20–30 cm from the soundhole, iPhone Microphone selected, headphones on.<br>
+    <b>What noise removal can do:</b> it removes steady sounds well — fans, AC, fridge, traffic hum. People talking or a TV are harder; moving the phone closer to the guitar helps most.<br>
+    <b>Use headphones.</b> With speakers, the mic hears the reverb and it can howl.
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PRESETS = {
+  "Small room": {mix:35, decay:8,  pre:0,   tone:7000, echo:0,  time:120, fb:0},
+  "Big hall":   {mix:45, decay:30, pre:40,  tone:6500, echo:0,  time:300, fb:0},
+  "Church":     {mix:55, decay:60, pre:80,  tone:5000, echo:0,  time:420, fb:0},
+  "Dreamy":     {mix:65, decay:80, pre:150, tone:4500, echo:30, time:500, fb:50},
+  "Echo":       {mix:20, decay:10, pre:0,   tone:6000, echo:60, time:350, fb:35},
+  "Slapback":   {mix:15, decay:6,  pre:0,   tone:6000, echo:55, time:110, fb:10},
+};
+let state = {...PRESETS["Big hall"], vol:250, gain:150, dry:false, gate:10, focus:true, nr:60, apple:false, mic:''};
+let ctx, stream, nodes = {}, irTimer, raf, measuring = null, noiseLearned = false;
+const gateThresh = v => Math.pow(v/100, 2) * 0.4;
+
+/* ---------- audio worklets ---------- */
+const WORKLETS = `
+/* Noise gate: lets sound through only while it is above the threshold */
+class Gate extends AudioWorkletProcessor{
+  static get parameterDescriptors(){return [{name:'threshold',defaultValue:0.004,minValue:0,maxValue:1}];}
+  constructor(){super();this.env=0;this.g=0;this.hold=0;}
+  process(ins,outs,p){
+    const inp=ins[0], out=outs[0]; if(!inp||!inp.length) return true;
+    const th=p.threshold[0], n=inp[0].length, sr=sampleRate;
+    const atk=1-Math.exp(-1/(sr*0.002)), rel=1-Math.exp(-1/(sr*0.15)), er=1-Math.exp(-1/(sr*0.02));
+    for(let i=0;i<n;i++){
+      const pk=Math.abs(inp[0][i]);
+      this.env = pk>this.env ? pk : this.env+(pk-this.env)*er;
+      if(this.env>th) this.hold=sr*0.15; else if(this.hold>0) this.hold--;
+      const t=(this.env>th||this.hold>0)?1:0;
+      this.g += (t-this.g)*(t>this.g?atk:rel);
+      for(let c=0;c<out.length;c++) out[c][i]=inp[0][i]*this.g;
+    }
+    return true;
+  }
+}
+registerProcessor('gate',Gate);
+
+/* Spectral noise removal: learns the room's noise "fingerprint" per frequency,
+   then subtracts it from every short slice of sound (FFT 1024, 75% overlap). */
+class Denoise extends AudioWorkletProcessor{
+  static get parameterDescriptors(){return [{name:'strength',defaultValue:0.6,minValue:0,maxValue:1}];}
+  constructor(){
+    super();
+    const N=this.N=1024, H=this.H=256, B=this.B=N/2+1;
+    this.win=new Float32Array(N);
+    for(let i=0;i<N;i++) this.win[i]=Math.sqrt(0.5-0.5*Math.cos(2*Math.PI*i/N));
+    this.fin=new Float32Array(N); this.ola=new Float32Array(N); this.outQ=new Float32Array(H);
+    this.re=new Float32Array(N); this.im=new Float32Array(N);
+    this.noise=new Float32Array(B); this.gs=new Float32Array(B).fill(1);
+    this.acc=new Float32Array(B); this.accN=0; this.learning=false; this.has=false; this.cnt=0;
+    this.rev=new Uint32Array(N); const bits=Math.log2(N);
+    for(let i=0;i<N;i++){let r=0;for(let b=0;b<bits;b++) r|=((i>>b)&1)<<(bits-1-b); this.rev[i]=r;}
+    this.cs=new Float32Array(N/2); this.sn=new Float32Array(N/2);
+    for(let i=0;i<N/2;i++){this.cs[i]=Math.cos(-2*Math.PI*i/N); this.sn[i]=Math.sin(-2*Math.PI*i/N);}
+    this.port.onmessage=e=>{
+      if(e.data==='learnStart'){this.acc.fill(0);this.accN=0;this.learning=true;}
+      if(e.data==='learnStop'){
+        this.learning=false;
+        if(this.accN>0){for(let k=0;k<this.B;k++) this.noise[k]=this.acc[k]/this.accN; this.has=true;}
+        this.port.postMessage({learned:this.has});
+      }
+    };
+  }
+  fft(re,im){
+    const N=this.N, rev=this.rev;
+    for(let i=0;i<N;i++){const j=rev[i]; if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+    for(let s=2;s<=N;s<<=1){
+      const h=s>>1, step=N/s;
+      for(let i=0;i<N;i+=s){
+        for(let j=0;j<h;j++){
+          const wr=this.cs[j*step], wi=this.sn[j*step], a=i+j, b=a+h;
+          const tr=wr*re[b]-wi*im[b], ti=wr*im[b]+wi*re[b];
+          re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti;
+        }
+      }
+    }
+  }
+  frame(strength){
+    const N=this.N,B=this.B,re=this.re,im=this.im;
+    for(let i=0;i<N;i++){re[i]=this.fin[i]*this.win[i]; im[i]=0;}
+    this.fft(re,im);
+    const active = this.has && strength>0.001;
+    const over=1+3*strength, floor=0.3-0.27*strength;
+    for(let k=0;k<B;k++){
+      const mag=Math.hypot(re[k],im[k]);
+      if(this.learning) this.acc[k]+=mag;
+      let g=1;
+      if(active){
+        g=1-over*this.noise[k]/(mag+1e-9);
+        if(g<floor) g=floor;
+        // fast open (keeps the pluck), slower close (avoids "watery" artifacts)
+        if(g>this.gs[k]) this.gs[k]=g; else this.gs[k]+= (g-this.gs[k])*0.35;
+        g=this.gs[k];
+      }
+      re[k]*=g; im[k]*=g;
+      if(k>0&&k<N/2){re[N-k]*=g; im[N-k]*=g;}
+    }
+    if(this.learning) this.accN++;
+    for(let i=0;i<N;i++) im[i]=-im[i];          // inverse FFT via conjugation
+    this.fft(re,im);
+    const sc=0.5/N;                               // sqrt-hann² at 75% overlap sums to 2
+    for(let i=0;i<N;i++) this.ola[i]+=re[i]*this.win[i]*sc;
+    this.outQ.set(this.ola.subarray(0,this.H));
+    this.ola.copyWithin(0,this.H); this.ola.fill(0,N-this.H);
+    this.fin.copyWithin(0,this.H);
+  }
+  process(ins,outs,p){
+    const inp=ins[0], out=outs[0]; if(!inp||!inp.length) return true;
+    const x=inp[0], y=out[0], st=p.strength[0], N=this.N, H=this.H;
+    for(let i=0;i<x.length;i++){
+      this.fin[N-H+this.cnt]=x[i];
+      y[i]=this.outQ[this.cnt];
+      if(++this.cnt===H){this.cnt=0; this.frame(st);}
+    }
+    for(let c=1;c<out.length;c++) out[c].set(y);
+    return true;
+  }
+}
+registerProcessor('denoise',Denoise);`;
+
+/* ---------- reverb "room" sound ---------- */
+function buildIR(seconds){
+  const rate = ctx.sampleRate, len = Math.max(1, Math.floor(rate*seconds));
+  const ir = ctx.createBuffer(2, len, rate);
+  for(let ch=0; ch<2; ch++){
+    const d = ir.getChannelData(ch);
+    for(let i=0;i<len;i++){ const t=i/len; d[i]=(Math.random()*2-1)*Math.pow(1-t,3.2); }
+  }
+  return ir;
+}
+function refreshIR(){
+  clearTimeout(irTimer);
+  irTimer = setTimeout(()=>{ if(ctx) nodes.conv.buffer = buildIR(state.decay/10); }, 120);
+}
+
+async function listMics(){
+  try{
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+    const sel=$('mic'); sel.innerHTML='';
+    devs.forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||('Microphone '+(i+1));sel.appendChild(o);});
+    const cur=stream&&stream.getAudioTracks()[0].getSettings().deviceId;
+    if(cur) sel.value=cur;
+  }catch(e){}
+}
+
+/* ---------- audio graph ---------- */
+async function start(){
+  $('err').style.display='none';
+  try{
+    ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+    stream = await navigator.mediaDevices.getUserMedia({audio:{
+      echoCancellation:state.apple, noiseSuppression:state.apple, autoGainControl:false, latency:0,
+      ...(state.mic ? {deviceId:{exact:state.mic}} : {})
+    }});
+  }catch(e){
+    if(state.mic && (e.name==='OverconstrainedError'||e.name==='NotFoundError')){
+      state.mic=''; try{localStorage.removeItem('pr_mic');}catch(_){}
+      if(ctx) ctx.close(); ctx=null; return start();
+    }
+    showErr(e.name==='NotAllowedError' ? 'Microphone permission was blocked. Allow it in Safari settings and try again.'
+          : 'Could not open the microphone: '+e.message);
+    stop(); return;
+  }
+  const n = nodes;
+  try{
+    const url = URL.createObjectURL(new Blob([WORKLETS],{type:'application/javascript'}));
+    await ctx.audioWorklet.addModule(url);
+    n.den  = new AudioWorkletNode(ctx,'denoise',{outputChannelCount:[1]});
+    n.gateNode = new AudioWorkletNode(ctx,'gate',{outputChannelCount:[1]});
+    n.den.port.onmessage = e => { if(e.data.learned!==undefined) onDenoiseLearned(e.data.learned); };
+  }catch(e){
+    n.den = ctx.createGain(); n.gateNode = ctx.createGain(); n.noWorklet = true;
+  }
+  noiseLearned = false; updateLearnText();
+
+  const src = ctx.createMediaStreamSource(stream);
+  n.gain = ctx.createGain();
+  n.hp = ctx.createBiquadFilter(); n.hp.type='highpass';
+  n.lp = ctx.createBiquadFilter(); n.lp.type='lowpass'; n.lp.Q.value=0.5;
+  n.analyser = ctx.createAnalyser(); n.analyser.fftSize=512;
+  n.dry = ctx.createGain();
+  n.pre = ctx.createDelay(1);
+  n.conv = ctx.createConvolver(); n.conv.buffer = buildIR(state.decay/10);
+  n.tone = ctx.createBiquadFilter(); n.tone.type='lowpass';
+  n.wet = ctx.createGain();
+  n.echoDelay = ctx.createDelay(2);
+  n.echoFb = ctx.createGain();
+  n.echoTone = ctx.createBiquadFilter(); n.echoTone.type='lowpass'; n.echoTone.frequency.value=3500;
+  n.echoOut = ctx.createGain();
+  n.master = ctx.createGain();
+  n.limiter = ctx.createDynamicsCompressor();
+  n.limiter.threshold.value=-3; n.limiter.ratio.value=20; n.limiter.attack.value=0.002; n.limiter.release.value=0.15;
+
+  // mic → boost → focus filters → noise removal → gate → reverb / echo → volume → limiter → out
+  src.connect(n.gain); n.gain.connect(n.hp); n.hp.connect(n.lp); n.lp.connect(n.den);
+  n.den.connect(n.analyser); n.den.connect(n.gateNode);
+  const g = n.gateNode;
+  g.connect(n.dry); n.dry.connect(n.master);
+  g.connect(n.pre); n.pre.connect(n.conv); n.conv.connect(n.tone); n.tone.connect(n.wet); n.wet.connect(n.master);
+  g.connect(n.echoDelay); n.echoDelay.connect(n.echoTone); n.echoTone.connect(n.echoFb); n.echoFb.connect(n.echoDelay);
+  n.echoTone.connect(n.echoOut); n.echoOut.connect(n.master); n.echoOut.connect(n.pre);
+  n.master.connect(n.limiter); n.limiter.connect(ctx.destination);
+
+  applyAll();
+  $('power').classList.add('on'); $('power').textContent='■ STOP';
+  $('lamp').classList.add('on'); $('stateTxt').textContent='Listening';
+  const lat=((ctx.baseLatency||0)+(ctx.outputLatency||0))*1000 + (n.noWorklet?0:21);
+  $('latency').textContent = `latency ~${Math.round(lat)} ms`;
+  if(n.noWorklet) showErr('Noise removal is not supported in this browser. Please update iOS.');
+  listMics(); meterLoop();
+}
+function stop(){
+  cancelAnimationFrame(raf);
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  if(ctx) ctx.close();
+  ctx=null; stream=null; nodes={}; noiseLearned=false; updateLearnText();
+  $('power').classList.remove('on'); $('power').textContent='▶ START';
+  $('lamp').classList.remove('on'); $('stateTxt').textContent='Off';
+  $('meter').style.width='0'; $('latency').textContent='latency —';
+}
+function showErr(m){ $('err').textContent=m; $('err').style.display='block'; }
+
+function meterLoop(){
+  const buf=new Float32Array(nodes.analyser.fftSize);
+  const tick=()=>{
+    if(!nodes.analyser) return;
+    nodes.analyser.getFloatTimeDomainData(buf);
+    let peak=0; for(const v of buf) peak=Math.max(peak,Math.abs(v));
+    $('meter').style.width=Math.min(100,peak*140)+'%';
+    $('gateLamp').classList.toggle('ok', peak>gateThresh(state.gate));
+    if(measuring) measuring.max=Math.max(measuring.max,peak);
+    raf=requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+/* ---------- learn room noise ---------- */
+function updateLearnText(){
+  $('learnState').innerHTML = !ctx ? 'Tap START first.'
+    : noiseLearned ? '✅ Room noise learned. Re-learn if you move or the room changes.'
+    : 'Not learned yet — noise removal is waiting for this.';
+}
+function learn(){
+  if(!ctx){ showErr('Tap START first, then Learn.'); return; }
+  if(nodes.noWorklet) return;
+  const b=$('learn'); b.disabled=true;
+  let left=3; b.textContent=`🤫 Stay quiet… ${left}`;
+  const t=setInterval(()=>{ left--; if(left>0) b.textContent=`🤫 Stay quiet… ${left}`; },1000);
+  nodes.den.port.postMessage('learnStart');
+  setTimeout(()=>{
+    nodes.den.port.postMessage('learnStop');
+    // after noise removal kicks in, measure what's left to set the quiet-sound filter
+    measuring={max:0};
+    setTimeout(()=>{
+      clearInterval(t);
+      const th=Math.min(0.4,Math.max(0.0015,measuring.max*1.4));
+      state.gate=Math.min(100,Math.round(Math.sqrt(th/0.4)*100));
+      measuring=null; b.disabled=false; b.textContent='🎧 Learn my room\'s noise again';
+      applyAll();
+    },900);
+  },2000);
+}
+function onDenoiseLearned(ok){ noiseLearned=ok; updateLearnText(); }
+
+/* ---------- controls ---------- */
+const ramp=(param,v)=>{ if(ctx) param.setTargetAtTime(v, ctx.currentTime, 0.03); };
+const nrWord=v=> v===0?'Off': v<35?'Light': v<70?'Medium':'Strong';
+function applyAll(){
+  const s=state, n=nodes;
+  $('preV').textContent = s.pre===0 ? 'right away' : (s.pre/1000).toFixed(2)+' s later';
+  $('decayV').textContent=(s.decay/10).toFixed(1)+' seconds';
+  $('mixV').textContent=s.mix+'%';
+  $('volV').textContent=s.vol+'%';
+  $('toneV').textContent=(s.tone/1000).toFixed(1)+' kHz';
+  $('echoV').textContent=s.echo? s.echo+'%' : 'off';
+  $('timeV').textContent=(s.time/1000).toFixed(2)+' s';
+  $('fbV').textContent=s.fb+'%';
+  $('gainV').textContent=s.gain+'%';
+  $('gateV').textContent=s.gate? s.gate+'%' : 'off';
+  $('nrV').textContent=nrWord(s.nr);
+  for(const k of ['pre','decay','mix','vol','tone','echo','time','fb','gain','gate','nr']) $(k).value=s[k];
+  $('dry').checked=s.dry; $('focus').checked=s.focus; $('apple').checked=s.apple;
+  if(!ctx) return;
+  ramp(n.gain.gain, s.gain/100);
+  ramp(n.hp.frequency, s.focus?90:40);
+  ramp(n.lp.frequency, s.focus?6500:20000);
+  if(!n.noWorklet){
+    ramp(n.den.parameters.get('strength'), s.nr/100);
+    ramp(n.gateNode.parameters.get('threshold'), gateThresh(s.gate));
+  }
+  ramp(n.master.gain, s.vol/100);
+  ramp(n.wet.gain, (s.mix/100)*4);
+  ramp(n.pre.delayTime, s.pre/1000);
+  ramp(n.tone.frequency, s.tone);
+  ramp(n.echoOut.gain, s.echo/100);
+  ramp(n.echoDelay.delayTime, s.time/1000);
+  ramp(n.echoFb.gain, s.fb/100);
+  ramp(n.dry.gain, s.dry?1:0);
+}
+const reverbKeys=['pre','mix','tone','echo','time','fb'];
+for(const k of reverbKeys) $(k).addEventListener('input',e=>{state[k]=+e.target.value; clearPreset(); applyAll();});
+for(const k of ['vol','gain','gate','nr']) $(k).addEventListener('input',e=>{state[k]=+e.target.value; applyAll();});
+$('decay').addEventListener('input',e=>{state.decay=+e.target.value; clearPreset(); applyAll(); refreshIR();});
+$('dry').addEventListener('change',e=>{state.dry=e.target.checked; applyAll();});
+$('focus').addEventListener('change',e=>{state.focus=e.target.checked; applyAll();});
+$('apple').addEventListener('change',async e=>{state.apple=e.target.checked; if(ctx){stop(); await start();}});
+$('mic').addEventListener('change',async e=>{
+  state.mic=e.target.value; try{localStorage.setItem('pr_mic',state.mic);}catch(_){}
+  if(ctx){stop(); await start();}
+});
+$('learn').addEventListener('click',learn);
+$('power').addEventListener('click',()=> ctx ? stop() : start());
+
+const pbox=$('presets');
+for(const name of Object.keys(PRESETS)){
+  const b=document.createElement('button'); b.textContent=name;
+  b.onclick=()=>{
+    const old=state.decay; Object.assign(state,PRESETS[name]);
+    [...pbox.children].forEach(x=>x.classList.toggle('active',x===b));
+    applyAll(); if(state.decay!==old) refreshIR();
+  };
+  if(name==='Big hall') b.classList.add('active');
+  pbox.appendChild(b);
+}
+function clearPreset(){ [...pbox.children].forEach(x=>x.classList.remove('active')); }
+try{ state.mic=localStorage.getItem('pr_mic')||''; }catch(_){}
+applyAll(); updateLearnText();
+</script>
+</body>
+</html>
