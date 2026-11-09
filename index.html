@@ -2,180 +2,171 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Pocket Reverb — live guitar reverb</title>
 <style>
-  :root{
-    --bg:#15110e; --panel:#211a15; --edge:#3a2e25; --cream:#efe3cf; --dim:#a8977f;
-    --amber:#f2a541; --red:#e0563b; --green:#7ccf7a;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -10%,#2b211a,var(--bg) 60%);
-    color:var(--cream);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
-    display:flex;justify-content:center;padding:20px}
-  .amp{width:100%;max-width:440px}
-  h1{font-family:Georgia,serif;font-style:italic;font-weight:normal;font-size:30px;margin:4px 0 2px;letter-spacing:.5px}
-  .sub{color:var(--dim);font-size:13px;margin-bottom:18px}
-  .panel{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:18px;margin-bottom:14px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
-  #power{width:100%;padding:18px;border-radius:14px;border:2px solid var(--amber);background:transparent;
-    color:var(--amber);font-size:18px;font-weight:600;letter-spacing:1px;cursor:pointer}
-  #power.on{background:var(--amber);color:#1a120b;box-shadow:0 0 28px rgba(242,165,65,.45)}
-  .status{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-top:10px}
-  .lamp{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4a3b30;margin-right:6px;vertical-align:middle}
-  .lamp.on{background:var(--red);box-shadow:0 0 8px var(--red)}
-  .lamp.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
-  .meter{height:8px;border-radius:4px;background:#0f0c0a;overflow:hidden;margin-top:12px}
-  .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--amber) 70%,var(--red));transition:width .05s}
-  .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .presets button{padding:10px 4px;border-radius:10px;border:1px solid var(--edge);background:#1a1410;color:var(--cream);font-size:13px;cursor:pointer}
-  .presets button:first-child{grid-column:1/-1;font-weight:600}
-  .presets button.active{border-color:var(--amber);color:var(--amber)}
+  :root{ --amber:#ffb454; --ink:#120d14; --lvl:0; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#120d14;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;
+    -webkit-user-select:none;user-select:none}
+  /* soft coloured light behind the glass */
+  .bg{position:fixed;inset:-20%;z-index:0;filter:blur(50px) saturate(1.2);
+    background:
+      radial-gradient(38% 30% at 22% 22%, #ff8a3d 0, transparent 70%),
+      radial-gradient(40% 32% at 82% 34%, #c83d8f 0, transparent 70%),
+      radial-gradient(45% 34% at 30% 78%, #2c8f9c 0, transparent 70%),
+      radial-gradient(40% 30% at 80% 85%, #6a4bd6 0, transparent 70%),
+      #1a1220;
+    animation:drift 26s ease-in-out infinite alternate;
+    opacity:calc(.75 + var(--lvl)*.25)}
+  @keyframes drift{from{transform:translate(-3%,-2%) rotate(0deg) scale(1)}to{transform:translate(3%,2%) rotate(8deg) scale(1.08)}}
+  #g{position:fixed;inset:0;z-index:1;width:100%;height:100%;height:100dvh;display:block;touch-action:none}
+  text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;pointer-events:none}
+  .lab{font-size:8.5px;letter-spacing:1.6px;fill:rgba(255,255,255,.85);font-weight:600}
+  .fret-t{font-size:12.5px;font-weight:600;letter-spacing:.4px;fill:rgba(255,255,255,.92)}
+  .fret-hit{fill:transparent;cursor:pointer}
+  .fret-bg{fill:rgba(255,180,84,0);transition:fill .2s}
+  .fret.active .fret-bg{fill:rgba(255,180,84,.92)}
+  .fret.active .fret-t{fill:#2a1705}
+  .hit{fill:transparent;cursor:ns-resize}
+  .btn{cursor:pointer}
+  .pluck{animation:pluck .35s ease-out}
+  @keyframes pluck{0%{transform:translateX(0)}20%{transform:translateX(2px)}40%{transform:translateX(-1.6px)}60%{transform:translateX(1px)}80%{transform:translateX(-.5px)}100%{transform:translateX(0)}}
+  #toast{position:fixed;z-index:5;top:12px;left:50%;transform:translateX(-50%);max-width:90%;
+    background:rgba(120,20,20,.85);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:10px 14px;font-size:13px;display:none}
+  /* More-settings sheet */
+  #sheet{position:fixed;z-index:4;left:0;right:0;bottom:0;max-height:82%;overflow:auto;
+    transform:translateY(105%);transition:transform .3s ease;
+    background:rgba(30,22,36,.78);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
+    border-top:1px solid rgba(255,255,255,.35);border-radius:22px 22px 0 0;padding:16px 20px 28px;
+    -webkit-user-select:auto;user-select:auto}
+  #sheet.open{transform:none}
+  #sheet h2{margin:0 0 4px;font-size:17px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  #sheet h2 button{background:rgba(255,255,255,.15);border:0;color:#fff;font-size:14px;border-radius:10px;padding:8px 14px}
   .ctl{margin:16px 0 4px}
-  .ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--cream);margin-bottom:2px}
+  .ctl label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:2px}
   .ctl label b{color:var(--amber);font-weight:500;font-size:13px}
-  .hint{font-size:12px;color:var(--dim);margin-bottom:6px}
+  .hint{font-size:12px;color:rgba(255,255,255,.65);margin-bottom:6px;line-height:1.45}
   input[type=range]{width:100%;accent-color:var(--amber)}
-  .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:-2px}
+  select{width:100%;padding:10px;border-radius:10px;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:14px}
   .row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;margin-top:16px}
-  .row small{color:var(--dim);font-size:12px}
+  .row small{color:rgba(255,255,255,.65);font-size:12px}
   input[type=checkbox]{width:22px;height:22px;accent-color:var(--amber);flex:none}
-  .note{font-size:12px;color:var(--dim);line-height:1.55}
-  .note b{color:var(--amber);font-weight:500}
-  .err{color:var(--red);font-size:13px;margin-top:10px;display:none}
-  .sec{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-  select{width:100%;padding:10px;border-radius:10px;background:#1a1410;color:var(--cream);border:1px solid var(--edge);font-size:14px}
-  button.big2{width:100%;margin-top:10px;padding:14px;border-radius:12px;border:1px solid var(--amber);background:transparent;color:var(--amber);font-size:15px;font-weight:600;cursor:pointer}
-  button.big2:disabled{opacity:.6}
-  details summary{cursor:pointer;font-size:14px;color:var(--amber);list-style:none}
-  details summary::before{content:"▸ ";} details[open] summary::before{content:"▾ ";}
-  #learnState{font-size:12px;color:var(--dim);margin-top:8px}
 </style>
 </head>
 <body>
-<div class="amp">
-  <h1>Pocket Reverb</h1>
-  <div class="sub">Play into your phone's mic. Hear the room grow.</div>
+<div class="bg"></div>
+<div id="toast"></div>
 
-  <!-- 1. Start -->
-  <div class="panel">
-    <button id="power">▶ START</button>
-    <div class="status">
-      <span><span class="lamp" id="lamp"></span><span id="stateTxt">Off</span></span>
-      <span id="latency">latency —</span>
-    </div>
-    <div class="meter"><i id="meter"></i></div>
-    <div class="err" id="err"></div>
-  </div>
+<svg id="g" viewBox="0 0 390 700" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="bodyP" d="M38 132 C4 172 -6 258 12 330 C26 400 -20 440 -18 520 C-16 640 80 700 195 698 C310 700 406 640 408 520 C410 440 364 400 378 330 C388 268 380 208 352 172 C335 170 322 184 318 200 C314 215 302 218 290 218 L100 218 C88 218 80 210 76 195 C72 170 60 138 38 132 Z"/>
+    <clipPath id="bodyClip"><use href="#bodyP"/></clipPath>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".36"/>
+      <stop offset=".45" stop-color="#fff" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".24"/>
+    </linearGradient>
+    <linearGradient id="neckG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1c1014" stop-opacity=".72"/>
+      <stop offset=".5" stop-color="#3a2422" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#1c1014" stop-opacity=".72"/>
+    </linearGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".5"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".14"/>
+    </linearGradient>
+    <linearGradient id="coil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb072"/><stop offset="1" stop-color="#d9673a"/>
+    </linearGradient>
+    <radialGradient id="beadG" cx=".35" cy=".3" r=".8">
+      <stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#ffe2b8"/><stop offset="1" stop-color="#ffab45"/>
+    </radialGradient>
+    <radialGradient id="knobG" cx=".35" cy=".3" r=".9">
+      <stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity=".16"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3.5"/></filter>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/>
+      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  .7 0 0 0 0"/>
+    </filter>
+  </defs>
 
-  <!-- 2. Background noise -->
-  <div class="panel">
-    <div class="sec">Step 1 · Remove background noise</div>
-    <div class="hint">Tap the button, then don't play or talk for 3 seconds. The app learns what your room sounds like and removes it.</div>
-    <button id="learn" class="big2">🎧 Learn my room's noise</button>
-    <div id="learnState">Not learned yet.</div>
+  <!-- shadow, glass body, frosted grain, thick glass edge -->
+  <use href="#bodyP" fill="#000" opacity=".35" filter="url(#soft)" transform="translate(6 10)"/>
+  <use href="#bodyP" fill="url(#glass)"/>
+  <g clip-path="url(#bodyClip)">
+    <rect x="-20" y="120" width="430" height="590" filter="url(#grain)" opacity=".13"/>
+    <use href="#bodyP" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="16" filter="url(#soft)"/>
+    <path d="M30 200 C10 300 60 380 10 520" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+  </g>
+  <use href="#bodyP" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.4"/>
 
-    <div class="ctl">
-      <label>Noise removal <b id="nrV"></b></label>
-      <div class="hint">How hard to remove background noise.</div>
-      <input id="nr" type="range" min="0" max="100">
-      <div class="ends"><span>Off</span><span>Strong</span></div>
-    </div>
+  <!-- neck / fretboard: the frets are the presets -->
+  <rect x="100" y="-10" width="190" height="226" rx="4" fill="url(#neckG)" stroke="#fff" stroke-opacity=".45"/>
+  <g id="frets"></g>
 
-    <div class="ctl">
-      <label>Microphone</label>
-      <div class="hint">Choose <b style="color:var(--amber)">iPhone Microphone</b> and keep the phone close to the guitar.</div>
-      <select id="mic"><option value="">Default (tap START to see the list)</option></select>
-    </div>
-  </div>
+  <!-- pickups (decoration + level lights) -->
+  <g id="pickups"></g>
 
-  <!-- 3. Reverb -->
-  <div class="panel">
-    <div class="sec">Step 2 · Shape your reverb</div>
-    <div class="hint">Pick a style to start from, then fine-tune below.</div>
-    <div class="presets" id="presets"></div>
+  <!-- bridge with control names -->
+  <rect x="94" y="534" width="202" height="92" rx="12" fill="url(#chrome)" stroke="#fff" stroke-opacity=".6"/>
+  <g id="saddles"></g>
 
-    <div class="ctl">
-      <label>How soon it comes back <b id="preV"></b></label>
-      <div class="hint">The gap between plucking a string and hearing the reverb.</div>
-      <input id="pre" type="range" min="0" max="500" step="5">
-      <div class="ends"><span>Right away</span><span>Half a second</span></div>
-    </div>
+  <!-- strings = sliders -->
+  <g id="strings"></g>
 
-    <div class="ctl">
-      <label>How long it lasts <b id="decayV"></b></label>
-      <div class="hint">How long the sound keeps ringing after you play.</div>
-      <input id="decay" type="range" min="3" max="80">
-      <div class="ends"><span>Short</span><span>Very long</span></div>
-    </div>
+  <!-- START -->
+  <g id="power" class="btn">
+    <circle cx="50" cy="468" r="40" fill="#ffb454" opacity="0" id="powerGlow" filter="url(#soft)"/>
+    <circle cx="50" cy="468" r="34" fill="url(#knobG)" stroke="#fff" stroke-opacity=".8" stroke-width="1.4" id="powerDisc"/>
+    <text id="powerT" x="50" y="472.5" text-anchor="middle" style="font-size:12px;font-weight:700;letter-spacing:1.5px;fill:#fff">START</text>
+  </g>
+  <!-- Learn room noise -->
+  <g id="learn" class="btn">
+    <circle cx="54" cy="572" r="26" fill="url(#knobG)" stroke="#fff" stroke-opacity=".7" stroke-width="1.2"/>
+    <text id="learnT" x="54" y="576" text-anchor="middle" style="font-size:10px;font-weight:700;letter-spacing:1px;fill:#fff">LEARN</text>
+    <text class="lab" x="54" y="613" text-anchor="middle">ROOM NOISE</text>
+  </g>
 
-    <div class="ctl">
-      <label>How much reverb <b id="mixV"></b></label>
-      <input id="mix" type="range" min="0" max="100">
-      <div class="ends"><span>A little</span><span>A lot</span></div>
-    </div>
+  <!-- knobs -->
+  <g id="knobs"></g>
 
-    <div class="ctl">
-      <label>Volume <b id="volV"></b></label>
-      <input id="vol" type="range" min="0" max="400">
-      <div class="ends"><span>Quiet</span><span>Loud</span></div>
-    </div>
-  </div>
+  <!-- More -->
+  <g id="more" class="btn">
+    <circle cx="343" cy="650" r="16" fill="url(#knobG)" stroke="#fff" stroke-opacity=".7"/>
+    <circle cx="336" cy="650" r="1.8" fill="#fff"/><circle cx="343" cy="650" r="1.8" fill="#fff"/><circle cx="350" cy="650" r="1.8" fill="#fff"/>
+  </g>
 
-  <!-- 4. More -->
-  <div class="panel">
-    <details>
-      <summary>More settings (optional)</summary>
+  <!-- readout near the bridge -->
+  <rect x="62" y="634" width="256" height="32" rx="16" fill="#000" fill-opacity=".32" stroke="#fff" stroke-opacity=".4"/>
+  <text id="ro" x="190" y="654.5" text-anchor="middle" style="font-size:12.5px;fill:#fff;font-weight:500">Tap START and play</text>
+</svg>
 
-      <div class="ctl">
-        <label>Brightness <b id="toneV"></b></label>
-        <div class="hint">Darker = warmer, softer reverb. Brighter = sparkly.</div>
-        <input id="tone" type="range" min="1500" max="12000" step="100">
-        <div class="ends"><span>Darker</span><span>Brighter</span></div>
-      </div>
-
-      <div class="ctl">
-        <label>Echo amount <b id="echoV"></b></label>
-        <div class="hint">Adds clear repeats of your notes (like shouting in a canyon).</div>
-        <input id="echo" type="range" min="0" max="100">
-      </div>
-      <div class="ctl">
-        <label>Gap between echoes <b id="timeV"></b></label>
-        <input id="time" type="range" min="60" max="900">
-      </div>
-      <div class="ctl">
-        <label>Number of echoes <b id="fbV"></b></label>
-        <input id="fb" type="range" min="0" max="85">
-        <div class="ends"><span>One</span><span>Many</span></div>
-      </div>
-
-      <div class="ctl">
-        <label>Mic boost <b id="gainV"></b></label>
-        <div class="hint">Turn up if the bar at the top barely moves when you play.</div>
-        <input id="gain" type="range" min="0" max="600">
-      </div>
-
-      <div class="ctl">
-        <label>Ignore very quiet sounds <span><span class="lamp" id="gateLamp"></span><b id="gateV"></b></span></label>
-        <div class="hint">Light turns green while the app hears you playing. Lower this if soft notes get cut off.</div>
-        <input id="gate" type="range" min="0" max="100">
-      </div>
-
-      <div class="row"><span>Guitar focus<br><small>Cuts very low rumble and very high hiss.</small></span><input id="focus" type="checkbox"></div>
-      <div class="row"><span>iPhone voice isolation<br><small>Uses Apple's own noise removal. Strong, but can make the guitar sound thin.</small></span><input id="apple" type="checkbox"></div>
-      <div class="row"><span>Hear my guitar through the headphones too<br><small>Only for electric guitar plugged in.</small></span><input id="dry" type="checkbox"></div>
-    </details>
-  </div>
-
-  <div class="panel note">
-    <b>Best results:</b> phone 20–30 cm from the soundhole, iPhone Microphone selected, headphones on.<br>
-    <b>What noise removal can do:</b> it removes steady sounds well — fans, AC, fridge, traffic hum. People talking or a TV are harder; moving the phone closer to the guitar helps most.<br>
-    <b>Use headphones.</b> With speakers, the mic hears the reverb and it can howl.
-  </div>
+<div id="sheet">
+  <h2>More settings <button id="closeSheet">Done</button></h2>
+  <div class="ctl"><label>Microphone</label>
+    <div class="hint">Choose <b style="color:var(--amber)">iPhone Microphone</b> and keep the phone close to the guitar.</div>
+    <select id="mic"><option value="">Default (tap START to see the list)</option></select></div>
+  <div class="ctl"><label>Gap between echoes <b id="timeV"></b></label><input id="time" type="range" min="60" max="900"></div>
+  <div class="ctl"><label>Number of echoes <b id="fbV"></b></label><input id="fb" type="range" min="0" max="85"></div>
+  <div class="ctl"><label>Ignore very quiet sounds <b id="gateV"></b></label>
+    <div class="hint">The lower pickup lights green while the app hears you. Lower this if soft notes get cut off.</div>
+    <input id="gate" type="range" min="0" max="100"></div>
+  <div class="row"><span>Guitar focus<br><small>Cuts very low rumble and very high hiss.</small></span><input id="focus" type="checkbox"></div>
+  <div class="row"><span>iPhone voice isolation<br><small>Apple's own noise removal. Strong, but can thin the guitar.</small></span><input id="apple" type="checkbox"></div>
+  <div class="row"><span>Hear my guitar through the headphones too<br><small>Only for electric guitar plugged in.</small></span><input id="dry" type="checkbox"></div>
+  <div class="hint" style="margin-top:18px"><b style="color:var(--amber)">Tips:</b> phone 20–30 cm from the soundhole, headphones on. Tap LEARN and stay quiet for 3 seconds so the app can remove your room's noise.</div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs={}, parent) => { const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; };
+const svg = $('g');
+
 const PRESETS = {
   "Reverb 1":   {mix:15, decay:21, pre:40,  tone:6500, echo:0,  time:300, fb:0, vol:250},  // Parth's favourite
   "Small room": {mix:35, decay:8,  pre:0,   tone:7000, echo:0,  time:120, fb:0},
@@ -188,6 +179,118 @@ const PRESETS = {
 let state = {vol:250, ...PRESETS["Reverb 1"], gain:150, dry:false, gate:10, focus:true, nr:60, apple:false, mic:''};
 let ctx, stream, nodes = {}, irTimer, raf, measuring = null, noiseLearned = false;
 const gateThresh = v => Math.pow(v/100, 2) * 0.4;
+const nrWord = v => v===0?'off': v<35?'light': v<70?'medium':'strong';
+
+/* ---------- the six strings and two knobs ---------- */
+const STRINGS = [
+  {k:'pre',   min:0,    max:500,   step:5,   lab:'HOW SOON',  name:'Comes back',     fmt:v=> v===0?'right away':(v/1000).toFixed(2)+' s later'},
+  {k:'decay', min:3,    max:80,    step:1,   lab:'HOW LONG',  name:'Lasts',          fmt:v=>(v/10).toFixed(1)+' seconds'},
+  {k:'mix',   min:0,    max:100,   step:1,   lab:'HOW MUCH',  name:'Reverb amount',  fmt:v=>v+'%'},
+  {k:'nr',    min:0,    max:100,   step:1,   lab:'NOISE CUT', name:'Noise removal',  fmt:nrWord},
+  {k:'tone',  min:1500, max:12000, step:100, lab:'BRIGHT',    name:'Brightness',     fmt:v=> v<4500?'dark':v<8000?'warm':'bright'},
+  {k:'echo',  min:0,    max:100,   step:1,   lab:'ECHO',      name:'Echo',           fmt:v=> v? v+'%':'off'},
+];
+const KNOBS = [
+  {k:'vol',  min:0, max:400, cx:340, cy:468, r:32, lab:'VOLUME',    name:'Volume',    fmt:v=>v+'%'},
+  {k:'gain', min:0, max:600, cx:336, cy:572, r:26, lab:'MIC BOOST', name:'Mic boost', fmt:v=>v+'%'},
+];
+const REVERB_KEYS = ['pre','decay','mix','tone','echo','time','fb'];
+const SX = i => 115 + 32*i, Y_TOP = 234, Y_BOT = 520;
+
+/* frets = presets */
+const fretG = $('frets'), FRET_H = 30, FRET_Y0 = 4;
+Object.keys(PRESETS).forEach((name,i)=>{
+  const y = FRET_Y0 + i*FRET_H;
+  const g = el('g',{class:'fret'},fretG); g.dataset.name = name;
+  el('rect',{class:'fret-bg',x:102,y:y+2,width:186,height:FRET_H-4,rx:5},g);
+  const t = el('text',{class:'fret-t',x:195,y:y+FRET_H/2+4.5,'text-anchor':'middle'},g); t.textContent = name;
+  el('rect',{x:100,y:y+FRET_H-1,width:190,height:2,fill:'#fff','fill-opacity':.6},g);
+  const hit = el('rect',{class:'fret-hit',x:100,y:y,width:190,height:FRET_H},g);
+  hit.addEventListener('click',()=>choosePreset(name));
+});
+
+/* pickups */
+const poles = {neck:[], bridge:[]};
+function pickup(y, key){
+  const g = el('g',{},$('pickups'));
+  el('rect',{x:106,y:y,width:178,height:52,rx:9,fill:'#fff','fill-opacity':.14,stroke:'#fff','stroke-opacity':.55},g);
+  for(const dy of [7,28]){
+    el('rect',{x:113,y:y+dy,width:164,height:17,rx:8.5,fill:'url(#coil)','fill-opacity':.8},g);
+    for(let i=0;i<6;i++) poles[key].push(el('circle',{cx:SX(i),cy:y+dy+8.5,r:3.6,fill:'#2a1a14',stroke:'#fff','stroke-opacity':.5,'stroke-width':.8},g));
+  }
+}
+pickup(250,'neck'); pickup(440,'bridge');
+
+/* bridge saddles with the control names */
+STRINGS.forEach((s,i)=>{
+  const x = SX(i);
+  el('rect',{x:x-13,y:540,width:26,height:80,rx:6,fill:'#000','fill-opacity':.38,stroke:'#fff','stroke-opacity':.35},$('saddles'));
+  const t = el('text',{class:'lab',x:x,y:580,'text-anchor':'middle',transform:`rotate(-90 ${x} 580)`,dy:3},$('saddles'));
+  t.textContent = s.lab;
+});
+
+/* strings */
+STRINGS.forEach((s,i)=>{
+  const x = SX(i), w = 2.8 - i*0.28, g = el('g',{},$('strings'));
+  s.line = el('line',{x1:x,y1:-10,x2:x,y2:548,stroke:'#fff','stroke-opacity':.62,'stroke-width':w},g);
+  s.glow = el('line',{x1:x,y1:Y_BOT,x2:x,y2:548,stroke:'#ffb454','stroke-width':w+5,'stroke-opacity':.5,'stroke-linecap':'round',filter:'url(#glow)'},g);
+  s.fill = el('line',{x1:x,y1:Y_BOT,x2:x,y2:548,stroke:'#ffc57a','stroke-width':w+1,'stroke-linecap':'round'},g);
+  s.bead = el('g',{},g);
+  el('circle',{r:16,fill:'#ffb454',opacity:.35,filter:'url(#glow)'},s.bead);
+  el('circle',{r:11,fill:'url(#beadG)',stroke:'#fff','stroke-width':1.2},s.bead);
+  s.g = g; s.x = x;
+  const hit = el('rect',{class:'hit',x:x-16,y:Y_TOP-14,width:32,height:Y_BOT-Y_TOP+28},g);
+  let drag = false;
+  const upd = e => {
+    const f = Math.min(1,Math.max(0,(Y_BOT - svgPt(e).y)/(Y_BOT-Y_TOP)));
+    let v = s.min + f*(s.max-s.min); v = Math.round(v/s.step)*s.step;
+    setVal(s.k, v); flash(s.name, s.fmt(v));
+  };
+  hit.addEventListener('pointerdown',e=>{drag=true; try{hit.setPointerCapture(e.pointerId);}catch(_){} upd(e); e.preventDefault();});
+  hit.addEventListener('pointermove',e=>{ if(drag) upd(e); });
+  const end = ()=>{ if(!drag) return; drag=false; g.classList.remove('pluck'); void g.getBBox(); g.classList.add('pluck'); };
+  hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end);
+});
+
+/* knobs */
+KNOBS.forEach(kn=>{
+  const g = el('g',{class:'btn'},$('knobs')), {cx,cy,r} = kn;
+  for(let a=-135;a<=135;a+=27){
+    const rad=(a-90)*Math.PI/180;
+    el('line',{x1:cx+Math.cos(rad)*(r+4),y1:cy+Math.sin(rad)*(r+4),x2:cx+Math.cos(rad)*(r+8),y2:cy+Math.sin(rad)*(r+8),stroke:'#fff','stroke-opacity':.6,'stroke-width':1.2},g);
+  }
+  kn.arc = el('path',{fill:'none',stroke:'#ffb454','stroke-width':3,'stroke-linecap':'round'},g);
+  el('circle',{cx,cy,r,fill:'url(#knobG)',stroke:'#fff','stroke-opacity':.8,'stroke-width':1.4},g);
+  kn.ptr = el('g',{},g);
+  el('line',{x1:cx,y1:cy-r+5,x2:cx,y2:cy-r*0.35,stroke:'#fff','stroke-width':3,'stroke-linecap':'round'},kn.ptr);
+  const t = el('text',{class:'lab',x:cx,y:cy+r+19,'text-anchor':'middle'},g); t.textContent = kn.lab;
+  const hit = el('circle',{cx,cy,r:r+10,fill:'transparent',style:'cursor:ns-resize'},g);
+  let drag=false, y0=0, v0=0;
+  hit.addEventListener('pointerdown',e=>{drag=true; try{hit.setPointerCapture(e.pointerId);}catch(_){} y0=svgPt(e).y; v0=state[kn.k]; flash(kn.name, kn.fmt(v0)+'  ·  drag up or down'); e.preventDefault();});
+  hit.addEventListener('pointermove',e=>{
+    if(!drag) return;
+    let v = v0 + (y0 - svgPt(e).y)/150*(kn.max-kn.min);
+    v = Math.round(Math.min(kn.max,Math.max(kn.min,v))/5)*5;
+    setVal(kn.k, v); flash(kn.name, kn.fmt(v));
+  });
+  const end=()=>{drag=false;}; hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end);
+});
+
+function svgPt(e){ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+function arcPath(cx,cy,r,a0,a1){
+  const p=a=>{const t=(a-90)*Math.PI/180; return [cx+Math.cos(t)*r, cy+Math.sin(t)*r];};
+  const [x0,y0]=p(a0),[x1,y1]=p(a1);
+  return `M${x0} ${y0} A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${x1} ${y1}`;
+}
+
+/* readout near the bridge */
+let statusMsg = 'Tap START and play', roTimer = null;
+function setStatus(m){ statusMsg=m; if(!roTimer) $('ro').textContent=m; }
+function flash(name,val){
+  $('ro').textContent = name+':  '+val;
+  clearTimeout(roTimer); roTimer=setTimeout(()=>{roTimer=null; $('ro').textContent=statusMsg;},2200);
+}
+function showErr(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',6000); }
 
 /* ---------- audio worklets ---------- */
 const WORKLETS = `
@@ -265,7 +368,6 @@ class Denoise extends AudioWorkletProcessor{
       if(active){
         g=1-over*this.noise[k]/(mag+1e-9);
         if(g<floor) g=floor;
-        // fast open (keeps the pluck), slower close (avoids "watery" artifacts)
         if(g>this.gs[k]) this.gs[k]=g; else this.gs[k]+= (g-this.gs[k])*0.35;
         g=this.gs[k];
       }
@@ -273,9 +375,9 @@ class Denoise extends AudioWorkletProcessor{
       if(k>0&&k<N/2){re[N-k]*=g; im[N-k]*=g;}
     }
     if(this.learning) this.accN++;
-    for(let i=0;i<N;i++) im[i]=-im[i];          // inverse FFT via conjugation
+    for(let i=0;i<N;i++) im[i]=-im[i];
     this.fft(re,im);
-    const sc=0.5/N;                               // sqrt-hann² at 75% overlap sums to 2
+    const sc=0.5/N;
     for(let i=0;i<N;i++) this.ola[i]+=re[i]*this.win[i]*sc;
     this.outQ.set(this.ola.subarray(0,this.H));
     this.ola.copyWithin(0,this.H); this.ola.fill(0,N-this.H);
@@ -322,7 +424,6 @@ async function listMics(){
 
 /* ---------- audio graph ---------- */
 async function start(){
-  $('err').style.display='none';
   try{
     ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
     stream = await navigator.mediaDevices.getUserMedia({audio:{
@@ -344,11 +445,11 @@ async function start(){
     await ctx.audioWorklet.addModule(url);
     n.den  = new AudioWorkletNode(ctx,'denoise',{outputChannelCount:[1]});
     n.gateNode = new AudioWorkletNode(ctx,'gate',{outputChannelCount:[1]});
-    n.den.port.onmessage = e => { if(e.data.learned!==undefined) onDenoiseLearned(e.data.learned); };
+    n.den.port.onmessage = e => { if(e.data.learned!==undefined) noiseLearned = e.data.learned; };
   }catch(e){
     n.den = ctx.createGain(); n.gateNode = ctx.createGain(); n.noWorklet = true;
   }
-  noiseLearned = false; updateLearnText();
+  noiseLearned = false;
 
   const src = ctx.createMediaStreamSource(stream);
   n.gain = ctx.createGain();
@@ -379,10 +480,9 @@ async function start(){
   n.master.connect(n.limiter); n.limiter.connect(ctx.destination);
 
   applyAll();
-  $('power').classList.add('on'); $('power').textContent='■ STOP';
-  $('lamp').classList.add('on'); $('stateTxt').textContent='Listening';
-  const lat=((ctx.baseLatency||0)+(ctx.outputLatency||0))*1000 + (n.noWorklet?0:21);
-  $('latency').textContent = `latency ~${Math.round(lat)} ms`;
+  $('powerT').textContent='STOP'; $('powerGlow').setAttribute('opacity','.75'); $('powerT').style.fill='#2a1705';
+  $('powerDisc').setAttribute('fill','#ffb454');
+  setStatus('Listening — tap LEARN, then play');
   if(n.noWorklet) showErr('Noise removal is not supported in this browser. Please update iOS.');
   listMics(); meterLoop();
 }
@@ -390,21 +490,28 @@ function stop(){
   cancelAnimationFrame(raf);
   if(stream) stream.getTracks().forEach(t=>t.stop());
   if(ctx) ctx.close();
-  ctx=null; stream=null; nodes={}; noiseLearned=false; updateLearnText();
-  $('power').classList.remove('on'); $('power').textContent='▶ START';
-  $('lamp').classList.remove('on'); $('stateTxt').textContent='Off';
-  $('meter').style.width='0'; $('latency').textContent='latency —';
+  ctx=null; stream=null; nodes={}; noiseLearned=false;
+  $('powerT').textContent='START'; $('powerGlow').setAttribute('opacity','0'); $('powerT').style.fill='#fff';
+  $('powerDisc').setAttribute('fill','url(#knobG)');
+  setStatus('Tap START and play'); lightPoles(0,false);
+  document.documentElement.style.setProperty('--lvl',0);
 }
-function showErr(m){ $('err').textContent=m; $('err').style.display='block'; }
 
+/* pickup lights: top pickup = how loud, bottom pickup = "I hear you" */
+function lightPoles(level, hearing){
+  const on = Math.round(Math.min(1,level)*6);
+  poles.neck.forEach((p,i)=> p.setAttribute('fill', (i%6)<on ? '#fff3d6' : '#2a1a14'));
+  poles.bridge.forEach(p=> p.setAttribute('fill', hearing ? '#8dff9a' : '#2a1a14'));
+}
 function meterLoop(){
-  const buf=new Float32Array(nodes.analyser.fftSize);
+  const buf=new Float32Array(nodes.analyser.fftSize); let sm=0;
   const tick=()=>{
     if(!nodes.analyser) return;
     nodes.analyser.getFloatTimeDomainData(buf);
     let peak=0; for(const v of buf) peak=Math.max(peak,Math.abs(v));
-    $('meter').style.width=Math.min(100,peak*140)+'%';
-    $('gateLamp').classList.toggle('ok', peak>gateThresh(state.gate));
+    sm = Math.max(peak, sm*0.9);
+    lightPoles(sm*3, peak>gateThresh(state.gate));
+    document.documentElement.style.setProperty('--lvl', Math.min(1,sm*3).toFixed(2));
     if(measuring) measuring.max=Math.max(measuring.max,peak);
     raf=requestAnimationFrame(tick);
   };
@@ -412,50 +519,47 @@ function meterLoop(){
 }
 
 /* ---------- learn room noise ---------- */
-function updateLearnText(){
-  $('learnState').innerHTML = !ctx ? 'Tap START first.'
-    : noiseLearned ? '✅ Room noise learned. Re-learn if you move or the room changes.'
-    : 'Not learned yet — noise removal is waiting for this.';
-}
+let learningNow=false;
 function learn(){
-  if(!ctx){ showErr('Tap START first, then Learn.'); return; }
-  if(nodes.noWorklet) return;
-  const b=$('learn'); b.disabled=true;
-  let left=3; b.textContent=`🤫 Stay quiet… ${left}`;
-  const t=setInterval(()=>{ left--; if(left>0) b.textContent=`🤫 Stay quiet… ${left}`; },1000);
+  if(!ctx){ flash('First','tap START'); return; }
+  if(nodes.noWorklet || learningNow) return;
+  learningNow=true;
+  let left=3; $('learnT').textContent=left; setStatus('Shh… stay quiet');
+  const t=setInterval(()=>{ left--; if(left>0) $('learnT').textContent=left; },1000);
   nodes.den.port.postMessage('learnStart');
   setTimeout(()=>{
+    if(!ctx){ clearInterval(t); learningNow=false; $('learnT').textContent='LEARN'; return; }
     nodes.den.port.postMessage('learnStop');
-    // after noise removal kicks in, measure what's left to set the quiet-sound filter
     measuring={max:0};
     setTimeout(()=>{
-      clearInterval(t);
+      clearInterval(t); learningNow=false; $('learnT').textContent='LEARN';
+      if(!ctx || !measuring) return;
       const th=Math.min(0.4,Math.max(0.0015,measuring.max*1.4));
       state.gate=Math.min(100,Math.round(Math.sqrt(th/0.4)*100));
-      measuring=null; b.disabled=false; b.textContent='🎧 Learn my room\'s noise again';
-      applyAll();
+      measuring=null; applyAll();
+      setStatus('Room noise learned ✓  Play!');
     },900);
   },2000);
 }
-function onDenoiseLearned(ok){ noiseLearned=ok; updateLearnText(); }
 
-/* ---------- controls ---------- */
+/* ---------- apply state to the glass guitar + the audio ---------- */
 const ramp=(param,v)=>{ if(ctx) param.setTargetAtTime(v, ctx.currentTime, 0.03); };
-const nrWord=v=> v===0?'Off': v<35?'Light': v<70?'Medium':'Strong';
 function applyAll(){
   const s=state, n=nodes;
-  $('preV').textContent = s.pre===0 ? 'right away' : (s.pre/1000).toFixed(2)+' s later';
-  $('decayV').textContent=(s.decay/10).toFixed(1)+' seconds';
-  $('mixV').textContent=s.mix+'%';
-  $('volV').textContent=s.vol+'%';
-  $('toneV').textContent=(s.tone/1000).toFixed(1)+' kHz';
-  $('echoV').textContent=s.echo? s.echo+'%' : 'off';
+  for(const st of STRINGS){
+    const f=(s[st.k]-st.min)/(st.max-st.min), y=Y_BOT - f*(Y_BOT-Y_TOP);
+    st.bead.setAttribute('transform',`translate(${st.x} ${y})`);
+    st.fill.setAttribute('y1',y); st.glow.setAttribute('y1',y);
+  }
+  for(const kn of KNOBS){
+    const f=(s[kn.k]-kn.min)/(kn.max-kn.min), a=-135+270*f;
+    kn.ptr.setAttribute('transform',`rotate(${a} ${kn.cx} ${kn.cy})`);
+    kn.arc.setAttribute('d', f>0.005 ? arcPath(kn.cx,kn.cy,kn.r+6,-135,a) : '');
+  }
   $('timeV').textContent=(s.time/1000).toFixed(2)+' s';
   $('fbV').textContent=s.fb+'%';
-  $('gainV').textContent=s.gain+'%';
   $('gateV').textContent=s.gate? s.gate+'%' : 'off';
-  $('nrV').textContent=nrWord(s.nr);
-  for(const k of ['pre','decay','mix','vol','tone','echo','time','fb','gain','gate','nr']) $(k).value=s[k];
+  for(const k of ['time','fb','gate']) $(k).value=s[k];
   $('dry').checked=s.dry; $('focus').checked=s.focus; $('apple').checked=s.apple;
   if(!ctx) return;
   ramp(n.gain.gain, s.gain/100);
@@ -474,10 +578,28 @@ function applyAll(){
   ramp(n.echoFb.gain, s.fb/100);
   ramp(n.dry.gain, s.dry?1:0);
 }
-const reverbKeys=['pre','mix','tone','echo','time','fb'];
-for(const k of reverbKeys) $(k).addEventListener('input',e=>{state[k]=+e.target.value; clearPreset(); applyAll();});
-for(const k of ['vol','gain','gate','nr']) $(k).addEventListener('input',e=>{state[k]=+e.target.value; applyAll();});
-$('decay').addEventListener('input',e=>{state.decay=+e.target.value; clearPreset(); applyAll(); refreshIR();});
+function setVal(k,v){
+  if(state[k]===v) return;
+  state[k]=v;
+  if(REVERB_KEYS.includes(k)) markPreset(null);
+  applyAll();
+  if(k==='decay') refreshIR();
+}
+function markPreset(name){ [...fretG.children].forEach(g=>g.classList.toggle('active', g.dataset.name===name)); }
+function choosePreset(name){
+  const old=state.decay; Object.assign(state,PRESETS[name]);
+  markPreset(name); applyAll(); if(state.decay!==old) refreshIR();
+  flash('Preset', name);
+  STRINGS.forEach(s=>{ s.g.classList.remove('pluck'); void s.g.getBBox(); s.g.classList.add('pluck'); });
+}
+
+/* ---------- buttons + sheet ---------- */
+$('power').addEventListener('click',()=> ctx ? stop() : start());
+$('learn').addEventListener('click',learn);
+$('more').addEventListener('click',()=>$('sheet').classList.add('open'));
+$('closeSheet').addEventListener('click',()=>$('sheet').classList.remove('open'));
+for(const k of ['time','fb']) $(k).addEventListener('input',e=>setVal(k,+e.target.value));
+$('gate').addEventListener('input',e=>setVal('gate',+e.target.value));
 $('dry').addEventListener('change',e=>{state.dry=e.target.checked; applyAll();});
 $('focus').addEventListener('change',e=>{state.focus=e.target.checked; applyAll();});
 $('apple').addEventListener('change',async e=>{state.apple=e.target.checked; if(ctx){stop(); await start();}});
@@ -485,23 +607,8 @@ $('mic').addEventListener('change',async e=>{
   state.mic=e.target.value; try{localStorage.setItem('pr_mic',state.mic);}catch(_){}
   if(ctx){stop(); await start();}
 });
-$('learn').addEventListener('click',learn);
-$('power').addEventListener('click',()=> ctx ? stop() : start());
-
-const pbox=$('presets');
-for(const name of Object.keys(PRESETS)){
-  const b=document.createElement('button'); b.textContent=name;
-  b.onclick=()=>{
-    const old=state.decay; Object.assign(state,PRESETS[name]);
-    [...pbox.children].forEach(x=>x.classList.toggle('active',x===b));
-    applyAll(); if(state.decay!==old) refreshIR();
-  };
-  if(name==='Reverb 1') b.classList.add('active');
-  pbox.appendChild(b);
-}
-function clearPreset(){ [...pbox.children].forEach(x=>x.classList.remove('active')); }
 try{ state.mic=localStorage.getItem('pr_mic')||''; }catch(_){}
-applyAll(); updateLearnText();
+markPreset('Reverb 1'); applyAll();
 </script>
 </body>
 </html>
