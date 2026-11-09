@@ -5,150 +5,155 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Pocket Reverb — live guitar reverb</title>
 <style>
-  :root{ --amber:#ffb454; --ink:#120d14; --lvl:0; }
+  :root{ --cu:#e2672f; --ink:#2b2b30; }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;overflow:hidden;background:#120d14;
-    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff;
-    -webkit-user-select:none;user-select:none}
-  /* soft coloured light behind the glass */
-  .bg{position:fixed;inset:-20%;z-index:0;filter:blur(50px) saturate(1.2);
-    background:
-      radial-gradient(38% 30% at 22% 22%, #ff8a3d 0, transparent 70%),
-      radial-gradient(40% 32% at 82% 34%, #c83d8f 0, transparent 70%),
-      radial-gradient(45% 34% at 30% 78%, #2c8f9c 0, transparent 70%),
-      radial-gradient(40% 30% at 80% 85%, #6a4bd6 0, transparent 70%),
-      #1a1220;
-    animation:drift 26s ease-in-out infinite alternate;
-    opacity:calc(.75 + var(--lvl)*.25)}
-  @keyframes drift{from{transform:translate(-3%,-2%) rotate(0deg) scale(1)}to{transform:translate(3%,2%) rotate(8deg) scale(1.08)}}
+  html,body{margin:0;height:100%;overflow:hidden;background:#e6e4e0;color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none}
+  .wall{position:fixed;inset:0;background:radial-gradient(120% 85% at 45% 18%,#faf9f8 0,#ebe9e6 50%,#d2cfca 100%)}
   #g{position:fixed;inset:0;z-index:1;width:100%;height:100%;height:100dvh;display:block;touch-action:none}
   text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;pointer-events:none}
-  .lab{font-size:8.5px;letter-spacing:1.6px;fill:rgba(255,255,255,.85);font-weight:600}
-  .fret-t{font-size:12.5px;font-weight:600;letter-spacing:.4px;fill:rgba(255,255,255,.92)}
-  .fret-hit{fill:transparent;cursor:pointer}
-  .fret-bg{fill:rgba(255,180,84,0);transition:fill .2s}
-  .fret.active .fret-bg{fill:rgba(255,180,84,.92)}
-  .fret.active .fret-t{fill:#2a1705}
-  .hit{fill:transparent;cursor:ns-resize}
+  .lab{font-size:7.5px;letter-spacing:1.5px;fill:#55585e;font-weight:600}
+  .sad{font-size:7.2px;letter-spacing:1.1px;fill:#26272b;font-weight:700}
+  .pre-t{font-size:12.5px;fill:#6b6e75;font-weight:500;transition:fill .2s}
+  .pre-dot{fill:#efe9df;transition:fill .2s}
+  .pre.active .pre-t{fill:var(--cu);font-weight:700}
+  .pre.active .pre-dot{fill:var(--cu)}
+  .pre.active .pre-halo{opacity:.55}
+  .pre-halo{opacity:0;transition:opacity .2s}
+  .tap{fill:transparent;cursor:pointer}
   .btn{cursor:pointer}
+  .bead{transition:transform .12s}
   .pluck{animation:pluck .35s ease-out}
-  @keyframes pluck{0%{transform:translateX(0)}20%{transform:translateX(2px)}40%{transform:translateX(-1.6px)}60%{transform:translateX(1px)}80%{transform:translateX(-.5px)}100%{transform:translateX(0)}}
-  #toast{position:fixed;z-index:5;top:12px;left:50%;transform:translateX(-50%);max-width:90%;
-    background:rgba(120,20,20,.85);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:10px 14px;font-size:13px;display:none}
-  /* More-settings sheet */
+  @keyframes pluck{0%{transform:translateX(0)}20%{transform:translateX(1.6px)}40%{transform:translateX(-1.2px)}60%{transform:translateX(.8px)}80%{transform:translateX(-.4px)}100%{transform:translateX(0)}}
+  #toast{position:fixed;z-index:5;top:12px;left:50%;transform:translateX(-50%);max-width:90%;color:#fff;
+    background:rgba(170,40,30,.92);border-radius:12px;padding:10px 14px;font-size:13px;display:none}
   #sheet{position:fixed;z-index:4;left:0;right:0;bottom:0;max-height:82%;overflow:auto;
     transform:translateY(105%);transition:transform .3s ease;
-    background:rgba(30,22,36,.78);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);
-    border-top:1px solid rgba(255,255,255,.35);border-radius:22px 22px 0 0;padding:16px 20px 28px;
-    -webkit-user-select:auto;user-select:auto}
+    background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.78));
+    box-shadow:0 -18px 50px rgba(0,0,0,.18), inset 0 1px 1px rgba(255,255,255,.9), inset 0 0 0 1px rgba(255,255,255,.5);
+    border-radius:26px 26px 0 0;padding:16px 20px 28px;-webkit-user-select:auto;user-select:auto}
   #sheet.open{transform:none}
   #sheet h2{margin:0 0 4px;font-size:17px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
-  #sheet h2 button{background:rgba(255,255,255,.15);border:0;color:#fff;font-size:14px;border-radius:10px;padding:8px 14px}
+  #sheet h2 button{background:var(--ink);border:0;color:#fff;font-size:14px;border-radius:10px;padding:8px 14px}
   .ctl{margin:16px 0 4px}
   .ctl label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:2px}
-  .ctl label b{color:var(--amber);font-weight:500;font-size:13px}
-  .hint{font-size:12px;color:rgba(255,255,255,.65);margin-bottom:6px;line-height:1.45}
-  input[type=range]{width:100%;accent-color:var(--amber)}
-  select{width:100%;padding:10px;border-radius:10px;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:14px}
+  .ctl label b{color:var(--cu);font-weight:600;font-size:13px}
+  .hint{font-size:12px;color:#63666c;margin-bottom:6px;line-height:1.45}
+  .hint b{color:var(--cu)}
+  input[type=range]{width:100%;accent-color:var(--cu)}
+  select{width:100%;padding:10px;border-radius:10px;background:rgba(255,255,255,.8);color:var(--ink);border:1px solid rgba(0,0,0,.18);font-size:14px}
   .row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;margin-top:16px}
-  .row small{color:rgba(255,255,255,.65);font-size:12px}
-  input[type=checkbox]{width:22px;height:22px;accent-color:var(--amber);flex:none}
+  .row small{color:#63666c;font-size:12px}
+  input[type=checkbox]{width:22px;height:22px;accent-color:var(--cu);flex:none}
 </style>
 </head>
 <body>
-<div class="bg"></div>
+<div class="wall"></div>
 <div id="toast"></div>
 
 <svg id="g" viewBox="0 0 390 700" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <path id="bodyP" d="M38 132 C4 172 -6 258 12 330 C26 400 -20 440 -18 520 C-16 640 80 700 195 698 C310 700 406 640 408 520 C410 440 364 400 378 330 C388 268 380 208 352 172 C335 170 322 184 318 200 C314 215 302 218 290 218 L100 218 C88 218 80 210 76 195 C72 170 60 138 38 132 Z"/>
+    <path id="bodyP" d="M64 84 C36 90 22 160 38 240 C48 290 44 330 30 372 C8 430 -6 480 -4 540 C-2 630 80 692 195 692 C310 692 392 630 394 540 C396 480 372 430 350 384 C336 350 338 318 350 290 C362 262 364 240 348 222 C326 214 306 240 292 266 C280 288 262 296 244 296 L146 296 C128 296 112 284 104 258 C97 205 104 104 64 84 Z"/>
     <clipPath id="bodyClip"><use href="#bodyP"/></clipPath>
     <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".36"/>
-      <stop offset=".45" stop-color="#fff" stop-opacity=".12"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".24"/>
+      <stop offset="0" stop-color="#fff" stop-opacity=".42"/>
+      <stop offset=".5" stop-color="#f1f4f6" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".26"/>
     </linearGradient>
-    <linearGradient id="neckG" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#1c1014" stop-opacity=".72"/>
-      <stop offset=".5" stop-color="#3a2422" stop-opacity=".6"/>
-      <stop offset="1" stop-color="#1c1014" stop-opacity=".72"/>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#39231a"/><stop offset=".5" stop-color="#5d3c2c"/><stop offset="1" stop-color="#39231a"/>
     </linearGradient>
-    <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".5"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".14"/>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#b4b9bf"/><stop offset=".5" stop-color="#f6f7f8"/><stop offset="1" stop-color="#a9aeb5"/>
     </linearGradient>
     <linearGradient id="coil" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffb072"/><stop offset="1" stop-color="#d9673a"/>
+      <stop offset="0" stop-color="#f39563"/><stop offset="1" stop-color="#c9552a"/>
     </linearGradient>
-    <radialGradient id="beadG" cx=".35" cy=".3" r=".8">
-      <stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#ffe2b8"/><stop offset="1" stop-color="#ffab45"/>
+    <radialGradient id="beadG" cx=".35" cy=".3" r=".85">
+      <stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#f5a878"/><stop offset="1" stop-color="#d9571f"/>
     </radialGradient>
-    <radialGradient id="knobG" cx=".35" cy=".3" r=".9">
-      <stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity=".16"/>
+    <radialGradient id="knobG" cx=".35" cy=".28" r=".95">
+      <stop offset="0" stop-color="#fff" stop-opacity=".98"/><stop offset=".6" stop-color="#e3e7eb" stop-opacity=".7"/><stop offset="1" stop-color="#aeb6be" stop-opacity=".55"/>
     </radialGradient>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>
-    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3.5"/></filter>
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/>
-      <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  .7 0 0 0 0"/>
-    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
+    <filter id="edge" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
   </defs>
 
-  <!-- shadow, glass body, frosted grain, thick glass edge -->
-  <use href="#bodyP" fill="#000" opacity=".35" filter="url(#soft)" transform="translate(6 10)"/>
+  <text x="16" y="34" style="font-family:Georgia,serif;font-style:italic;font-size:19px;fill:#2b2b30">Pocket Reverb</text>
+
+  <!-- shadow the clear body throws on the wall -->
+  <use href="#bodyP" fill="#000" opacity=".07" filter="url(#soft)" transform="translate(16 18)"/>
+  <use href="#bodyP" fill="none" stroke="#1d2126" stroke-opacity=".3" stroke-width="7" filter="url(#edge)" transform="translate(14 16)"/>
+
+  <!-- clear acrylic body -->
   <use href="#bodyP" fill="url(#glass)"/>
   <g clip-path="url(#bodyClip)">
-    <rect x="-20" y="120" width="430" height="590" filter="url(#grain)" opacity=".13"/>
-    <use href="#bodyP" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="16" filter="url(#soft)"/>
-    <path d="M30 200 C10 300 60 380 10 520" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+    <use href="#bodyP" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="40" filter="url(#soft)"/>
+    <use href="#bodyP" fill="none" stroke="#59636d" stroke-opacity=".3" stroke-width="15.5"/>
+    <use href="#bodyP" fill="none" stroke="#fdfdfd" stroke-opacity=".9" stroke-width="13"/>
+    <use href="#bodyP" fill="none" stroke="#7f8a94" stroke-opacity=".35" stroke-width="2.4"/>
+    <path d="M60 130 C50 200 70 280 52 350" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" filter="url(#glow)" opacity=".9"/>
+    <path d="M40 420 C22 470 20 540 40 590" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" filter="url(#glow)" opacity=".8"/>
+    <path d="M362 440 C378 490 378 560 352 610" fill="none" stroke="#6d7780" stroke-width="2" stroke-linecap="round" filter="url(#glow)" opacity=".35"/>
   </g>
-  <use href="#bodyP" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.4"/>
+  <use href="#bodyP" fill="none" stroke="#8d969e" stroke-opacity=".75" stroke-width=".9"/>
 
-  <!-- neck / fretboard: the frets are the presets -->
-  <rect x="100" y="-10" width="190" height="226" rx="4" fill="url(#neckG)" stroke="#fff" stroke-opacity=".45"/>
+  <!-- neck -->
+  <rect x="150" y="-6" width="98" height="306" rx="5" fill="#000" opacity=".18" filter="url(#edge)" transform="translate(8 6)"/>
+  <path d="M146 -10 H244 V286 a8 8 0 0 1 -8 8 H154 a8 8 0 0 1 -8 -8 Z" fill="url(#wood)"/>
   <g id="frets"></g>
+  <g id="presets"></g>
 
-  <!-- pickups (decoration + level lights) -->
   <g id="pickups"></g>
 
-  <!-- bridge with control names -->
-  <rect x="94" y="534" width="202" height="92" rx="12" fill="url(#chrome)" stroke="#fff" stroke-opacity=".6"/>
+  <!-- bridge -->
+  <rect x="136" y="502" width="118" height="100" rx="10" fill="#000" opacity=".2" filter="url(#edge)" transform="translate(6 6)"/>
+  <rect x="136" y="502" width="118" height="100" rx="10" fill="#27282c" stroke="#8a8f96" stroke-width=".8"/>
   <g id="saddles"></g>
 
-  <!-- strings = sliders -->
   <g id="strings"></g>
 
   <!-- START -->
   <g id="power" class="btn">
-    <circle cx="50" cy="468" r="40" fill="#ffb454" opacity="0" id="powerGlow" filter="url(#soft)"/>
-    <circle cx="50" cy="468" r="34" fill="url(#knobG)" stroke="#fff" stroke-opacity=".8" stroke-width="1.4" id="powerDisc"/>
-    <text id="powerT" x="50" y="472.5" text-anchor="middle" style="font-size:12px;font-weight:700;letter-spacing:1.5px;fill:#fff">START</text>
+    <circle cx="62" cy="470" r="34" fill="#e2672f" opacity="0" id="powerGlow" filter="url(#soft)"/>
+    <circle cx="62" cy="472" r="30" fill="#000" opacity=".16" filter="url(#glow)"/>
+    <circle cx="62" cy="470" r="30" stroke="#e2672f" stroke-width="2" id="powerDisc" style="fill:url(#knobG)"/>
+    <text id="powerT" x="62" y="474" text-anchor="middle" style="font-size:10.5px;font-weight:700;letter-spacing:1.6px;fill:#2b2b30">START</text>
   </g>
   <!-- Learn room noise -->
   <g id="learn" class="btn">
-    <circle cx="54" cy="572" r="26" fill="url(#knobG)" stroke="#fff" stroke-opacity=".7" stroke-width="1.2"/>
-    <text id="learnT" x="54" y="576" text-anchor="middle" style="font-size:10px;font-weight:700;letter-spacing:1px;fill:#fff">LEARN</text>
-    <text class="lab" x="54" y="613" text-anchor="middle">ROOM NOISE</text>
+    <circle cx="72" cy="567" r="21" fill="#000" opacity=".14" filter="url(#glow)"/>
+    <circle cx="72" cy="565" r="21" fill="url(#knobG)" stroke="#8d969e" stroke-width="1"/>
+    <text id="learnT" x="72" y="568.5" text-anchor="middle" style="font-size:8.5px;font-weight:700;letter-spacing:1.1px;fill:#2b2b30">LEARN</text>
+    <text class="lab" x="72" y="601" text-anchor="middle">ROOM NOISE</text>
   </g>
 
-  <!-- knobs -->
   <g id="knobs"></g>
 
   <!-- More -->
   <g id="more" class="btn">
-    <circle cx="343" cy="650" r="16" fill="url(#knobG)" stroke="#fff" stroke-opacity=".7"/>
-    <circle cx="336" cy="650" r="1.8" fill="#fff"/><circle cx="343" cy="650" r="1.8" fill="#fff"/><circle cx="350" cy="650" r="1.8" fill="#fff"/>
+    <circle cx="318" cy="634" r="13" fill="url(#knobG)" stroke="#8d969e" stroke-width="1"/>
+    <circle cx="312.5" cy="634" r="1.6" fill="#2b2b30"/><circle cx="318" cy="634" r="1.6" fill="#2b2b30"/><circle cx="323.5" cy="634" r="1.6" fill="#2b2b30"/>
+    <circle cx="318" cy="634" r="22" fill="transparent"/>
   </g>
 
   <!-- readout near the bridge -->
-  <rect x="62" y="634" width="256" height="32" rx="16" fill="#000" fill-opacity=".32" stroke="#fff" stroke-opacity=".4"/>
-  <text id="ro" x="190" y="654.5" text-anchor="middle" style="font-size:12.5px;fill:#fff;font-weight:500">Tap START and play</text>
+  <rect x="96" y="620" width="198" height="28" rx="14" fill="#fff" fill-opacity=".72" stroke="#000" stroke-opacity=".12"/>
+  <text id="ro" x="195" y="638.5" text-anchor="middle" style="font-size:11.5px;fill:#2b2b30;font-weight:500">Tap START and play</text>
+
+  <!-- value bubble while sliding a string -->
+  <g id="tip" style="display:none">
+    <rect x="34" y="-13" width="98" height="26" rx="13" fill="#2b2b30"/>
+    <path d="M131 -5 L139 0 L131 5 Z" fill="#2b2b30"/>
+    <text id="tipT" x="83" y="4" text-anchor="middle" style="font-size:11.5px;fill:#fff;font-weight:600"></text>
+  </g>
 </svg>
 
 <div id="sheet">
   <h2>More settings <button id="closeSheet">Done</button></h2>
   <div class="ctl"><label>Microphone</label>
-    <div class="hint">Choose <b style="color:var(--amber)">iPhone Microphone</b> and keep the phone close to the guitar.</div>
+    <div class="hint">Choose <b>iPhone Microphone</b> and keep the phone close to the guitar.</div>
     <select id="mic"><option value="">Default (tap START to see the list)</option></select></div>
   <div class="ctl"><label>Gap between echoes <b id="timeV"></b></label><input id="time" type="range" min="60" max="900"></div>
   <div class="ctl"><label>Number of echoes <b id="fbV"></b></label><input id="fb" type="range" min="0" max="85"></div>
@@ -158,9 +163,245 @@
   <div class="row"><span>Guitar focus<br><small>Cuts very low rumble and very high hiss.</small></span><input id="focus" type="checkbox"></div>
   <div class="row"><span>iPhone voice isolation<br><small>Apple's own noise removal. Strong, but can thin the guitar.</small></span><input id="apple" type="checkbox"></div>
   <div class="row"><span>Hear my guitar through the headphones too<br><small>Only for electric guitar plugged in.</small></span><input id="dry" type="checkbox"></div>
-  <div class="hint" style="margin-top:18px"><b style="color:var(--amber)">Tips:</b> phone 20–30 cm from the soundhole, headphones on. Tap LEARN and stay quiet for 3 seconds so the app can remove your room's noise.</div>
+  <div class="hint" style="margin-top:18px"><b>Tips:</b> phone 20–30 cm from the soundhole, headphones on. Tap LEARN and stay quiet for 3 seconds so the app can remove your room's noise.</div>
 </div>
 
+<script>
+/*!
+ * liquid-glass.js — Apple-style liquid glass refraction for any element.
+ *
+ * Usage:
+ *   (include this file)
+ *   const glass = liquidGlass(document.querySelector('.my-card'), { scale: -112 });
+ *
+ * The module owns the SVG filter, displacement map, backdrop-filter wiring,
+ * resize handling, and the frosted-blur fallback for browsers that can't do
+ * SVG-filtered backdrops (Safari, Firefox). Visual dressing (tint, inner
+ * highlight, glare, shadows) stays in your CSS — see GLASS.md for the recipe.
+ *
+ * Technique per https://aave.com/design/building-glass-for-the-web and
+ * https://github.com/rizroze/liquid-glass
+ */
+(function (global) {
+  "use strict";
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  let uid = 0;
+  let svgDefs = null;
+
+  // Chromium can apply SVG filters via backdrop-filter; Safari and Firefox
+  // silently no-op, so they get the frosted fallback instead.
+  const supported = (() => {
+    const ua = navigator.userAgent;
+    const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
+    const isFirefox = /Firefox/.test(ua);
+    if (isSafari || isFirefox) return false;
+    if (!CSS.supports("backdrop-filter", "url(#lg)")) return false;
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 4;
+      c.getContext("2d").getImageData(0, 0, 1, 1);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  })();
+
+  function ensureDefs() {
+    if (svgDefs) return svgDefs;
+    const svg = document.createElementNS(SVG_NS, "svg");
+    // width/height 0 keeps it renderable (display:none would break feImage)
+    svg.setAttribute("width", "0");
+    svg.setAttribute("height", "0");
+    svg.setAttribute("aria-hidden", "true");
+    svg.style.position = "absolute";
+    svgDefs = document.createElementNS(SVG_NS, "defs");
+    svg.appendChild(svgDefs);
+    document.body.appendChild(svg);
+    return svgDefs;
+  }
+
+  // Displacement map, gradient-difference method: a red left->right ramp
+  // encodes X displacement, a blue top->bottom ramp encodes Y ("difference"
+  // keeps both since the channels are disjoint). A blurred, inset 50%-gray
+  // rounded rect neutralizes the interior, confining the refraction bulge to
+  // an edge band whose curvature is set by the blur radius.
+  function makeMap(w, h, radius, border, mapBlur) {
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+
+    const gx = ctx.createLinearGradient(0, 0, w, 0);
+    gx.addColorStop(0, "rgb(0,0,0)");
+    gx.addColorStop(1, "rgb(255,0,0)");
+    ctx.fillStyle = gx;
+    ctx.fillRect(0, 0, w, h);
+
+    const gy = ctx.createLinearGradient(0, 0, 0, h);
+    gy.addColorStop(0, "rgb(0,0,0)");
+    gy.addColorStop(1, "rgb(0,0,255)");
+    ctx.globalCompositeOperation = "difference";
+    ctx.fillStyle = gy;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.globalCompositeOperation = "source-over";
+    const inset = border * Math.min(w, h);
+    ctx.filter = "blur(" + mapBlur + "px)";
+    ctx.fillStyle = "rgba(128,128,128,0.93)";
+    ctx.beginPath();
+    ctx.roundRect(inset, inset, w - inset * 2, h - inset * 2,
+                  Math.max(radius - inset, 2));
+    ctx.fill();
+    ctx.filter = "none";
+    return canvas.toDataURL();
+  }
+
+  // Three displacement passes at staggered scales (R strongest), channels
+  // isolated with feColorMatrix and recombined with screen blends — the
+  // faint prism fringe at the rim.
+  function buildFilter(id, scales) {
+    const filter = document.createElementNS(SVG_NS, "filter");
+    filter.setAttribute("id", id);
+    filter.setAttribute("x", "0");
+    filter.setAttribute("y", "0");
+    filter.setAttribute("width", "100%");
+    filter.setAttribute("height", "100%");
+    // Load-bearing: filters default to linearRGB, which re-maps the map's
+    // neutral gray 128 to ~0.216 and injects a constant phantom displacement.
+    filter.setAttribute("color-interpolation-filters", "sRGB");
+
+    const feImage = document.createElementNS(SVG_NS, "feImage");
+    feImage.setAttribute("x", "0");
+    feImage.setAttribute("y", "0");
+    feImage.setAttribute("result", "map");
+    feImage.setAttribute("preserveAspectRatio", "none");
+    filter.appendChild(feImage);
+
+    const keep = [
+      "1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0",
+      "0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0",
+      "0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0",
+    ];
+    const channels = [];
+    for (let i = 0; i < 3; i++) {
+      const disp = document.createElementNS(SVG_NS, "feDisplacementMap");
+      disp.setAttribute("in", "SourceGraphic");
+      disp.setAttribute("in2", "map");
+      disp.setAttribute("scale", scales[i]);
+      disp.setAttribute("xChannelSelector", "R");
+      disp.setAttribute("yChannelSelector", "B");
+      disp.setAttribute("result", "d" + i);
+      filter.appendChild(disp);
+
+      const cm = document.createElementNS(SVG_NS, "feColorMatrix");
+      cm.setAttribute("in", "d" + i);
+      cm.setAttribute("type", "matrix");
+      cm.setAttribute("values", keep[i]);
+      cm.setAttribute("result", "c" + i);
+      filter.appendChild(cm);
+      channels.push("c" + i);
+    }
+
+    const blend1 = document.createElementNS(SVG_NS, "feBlend");
+    blend1.setAttribute("in", channels[0]);
+    blend1.setAttribute("in2", channels[1]);
+    blend1.setAttribute("mode", "screen");
+    blend1.setAttribute("result", "c01");
+    filter.appendChild(blend1);
+
+    const blend2 = document.createElementNS(SVG_NS, "feBlend");
+    blend2.setAttribute("in", "c01");
+    blend2.setAttribute("in2", channels[2]);
+    blend2.setAttribute("mode", "screen");
+    filter.appendChild(blend2);
+
+    ensureDefs().appendChild(filter);
+    return { filter, feImage };
+  }
+
+  function resolveRadius(el, w, h, override) {
+    if (override != null) return override;
+    const raw = getComputedStyle(el).borderTopLeftRadius || "0px";
+    const v = parseFloat(raw) || 0;
+    return raw.trim().endsWith("%") ? (v / 100) * Math.min(w, h) : v;
+  }
+
+  /**
+   * Apply liquid glass to an element.
+   *
+   * @param {Element} el
+   * @param {Object} [opts]
+   * @param {number} [opts.scale=-112]     Displacement strength (negative = magnifying bulge).
+   * @param {number} [opts.chroma=6]       Per-channel scale stagger; 0 disables the prism fringe.
+   * @param {number} [opts.border=0.07]    Neutral inset as a fraction of the smaller side.
+   * @param {number} [opts.mapBlur=12]     Edge-curvature softness (px) of the map's gray inset.
+   * @param {number} [opts.blur=3]         Backdrop blur (px) behind the glass interior.
+   * @param {number} [opts.saturate=1.5]   Backdrop saturation boost.
+   * @param {number} [opts.radius]         Corner radius override (px); default reads border-radius.
+   * @param {number} [opts.fallbackBlur=16] Frosted blur (px) where refraction is unsupported.
+   * @returns {{supported: boolean, refresh: Function, destroy: Function}}
+   */
+  function liquidGlass(el, opts) {
+    const o = Object.assign(
+      { scale: -112, chroma: 6, border: 0.07, mapBlur: 12,
+        blur: 3, saturate: 1.5, radius: null, fallbackBlur: 16 },
+      opts
+    );
+
+    if (!supported) {
+      const frosted = "blur(" + o.fallbackBlur + "px) saturate(" + o.saturate + ")";
+      el.style.backdropFilter = frosted;
+      el.style.webkitBackdropFilter = frosted;
+      el.classList.add("lg-fallback");
+      return { supported: false, refresh: function () {}, destroy: function () {
+        el.style.backdropFilter = "";
+        el.style.webkitBackdropFilter = "";
+        el.classList.remove("lg-fallback");
+      } };
+    }
+
+    const id = "lg-filter-" + (++uid);
+    const scales = [o.scale, o.scale + o.chroma, o.scale + 2 * o.chroma];
+    const parts = buildFilter(id, scales);
+
+    function refresh() {
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      if (!w || !h) return;
+      const radius = resolveRadius(el, w, h, o.radius);
+      parts.feImage.setAttribute("href", makeMap(w, h, radius, o.border, o.mapBlur));
+      parts.feImage.setAttribute("width", w);
+      parts.feImage.setAttribute("height", h);
+    }
+
+    refresh();
+    el.style.backdropFilter =
+      "url(#" + id + ") blur(" + o.blur + "px) saturate(" + o.saturate + ")";
+
+    let timer = null;
+    const ro = new ResizeObserver(function () {
+      clearTimeout(timer);
+      timer = setTimeout(refresh, 120);
+    });
+    ro.observe(el);
+
+    return {
+      supported: true,
+      refresh: refresh,
+      destroy: function () {
+        ro.disconnect();
+        clearTimeout(timer);
+        parts.filter.remove();
+        el.style.backdropFilter = "";
+      },
+    };
+  }
+
+  global.liquidGlass = liquidGlass;
+})(window);
+
+</script>
 <script>
 const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
@@ -191,82 +432,106 @@ const STRINGS = [
   {k:'echo',  min:0,    max:100,   step:1,   lab:'ECHO',      name:'Echo',           fmt:v=> v? v+'%':'off'},
 ];
 const KNOBS = [
-  {k:'vol',  min:0, max:400, cx:340, cy:468, r:32, lab:'VOLUME',    name:'Volume',    fmt:v=>v+'%'},
-  {k:'gain', min:0, max:600, cx:336, cy:572, r:26, lab:'MIC BOOST', name:'Mic boost', fmt:v=>v+'%'},
+  {k:'vol',  min:0, max:400, cx:326, cy:472, r:26, lab:'VOLUME',    name:'Volume',    fmt:v=>v+'%'},
+  {k:'gain', min:0, max:600, cx:318, cy:565, r:20, lab:'MIC BOOST', name:'Mic boost', fmt:v=>v+'%'},
 ];
 const REVERB_KEYS = ['pre','decay','mix','tone','echo','time','fb'];
-const SX = i => 115 + 32*i, Y_TOP = 234, Y_BOT = 520;
+const SX = i => 155 + 16*i, Y_TOP = 240, Y_BOT = 492, NECK_END = 294;
 
-/* frets = presets */
-const fretG = $('frets'), FRET_H = 30, FRET_Y0 = 4;
+/* fret wires (real spacing: wider towards the top) */
+const fretY = [NECK_END]; { let s=20; for(let k=0;k<10;k++){ fretY.push(fretY[k]-s); s*=1.06; } }
+fretY.slice(1).forEach(y=>{
+  el('rect',{x:146,y:y-1.1,width:98,height:2.2,fill:'url(#steel)'},$('frets'));
+});
+
+/* presets = the inlay dots, with their names beside the neck */
+const preG = $('presets');
 Object.keys(PRESETS).forEach((name,i)=>{
-  const y = FRET_Y0 + i*FRET_H;
-  const g = el('g',{class:'fret'},fretG); g.dataset.name = name;
-  el('rect',{class:'fret-bg',x:102,y:y+2,width:186,height:FRET_H-4,rx:5},g);
-  const t = el('text',{class:'fret-t',x:195,y:y+FRET_H/2+4.5,'text-anchor':'middle'},g); t.textContent = name;
-  el('rect',{x:100,y:y+FRET_H-1,width:190,height:2,fill:'#fff','fill-opacity':.6},g);
-  const hit = el('rect',{class:'fret-hit',x:100,y:y,width:190,height:FRET_H},g);
-  hit.addEventListener('click',()=>choosePreset(name));
+  const top = fretY[10-i], bot = fretY[9-i], yc = (top+bot)/2;
+  const g = el('g',{class:'pre btn'},preG); g.dataset.name = name;
+  el('circle',{class:'pre-halo',cx:195,cy:yc,r:9,fill:'#ff8a4a',filter:'url(#glow)'},g);
+  el('circle',{class:'pre-dot',cx:195,cy:yc,r:4.6},g);
+  el('line',{x1:247,y1:yc,x2:262,y2:yc,stroke:'#9a9da3','stroke-width':.8},g);
+  const t = el('text',{class:'pre-t',x:267,y:yc+4.3},g); t.textContent = name;
+  el('rect',{class:'tap',x:146,y:top,width:244,height:bot-top},g);
+  g.addEventListener('click',()=>choosePreset(name));
 });
 
 /* pickups */
 const poles = {neck:[], bridge:[]};
 function pickup(y, key){
   const g = el('g',{},$('pickups'));
-  el('rect',{x:106,y:y,width:178,height:52,rx:9,fill:'#fff','fill-opacity':.14,stroke:'#fff','stroke-opacity':.55},g);
-  for(const dy of [7,28]){
-    el('rect',{x:113,y:y+dy,width:164,height:17,rx:8.5,fill:'url(#coil)','fill-opacity':.8},g);
-    for(let i=0;i<6;i++) poles[key].push(el('circle',{cx:SX(i),cy:y+dy+8.5,r:3.6,fill:'#2a1a14',stroke:'#fff','stroke-opacity':.5,'stroke-width':.8},g));
+  el('rect',{x:132,y:y,width:126,height:46,rx:8,fill:'#000',opacity:.16,filter:'url(#glow)',transform:'translate(4 5)'},g);
+  el('rect',{x:132,y:y,width:126,height:46,rx:8,fill:'#fff','fill-opacity':.55,stroke:'#8d969e','stroke-width':.9},g);
+  for(const dy of [6,25]){
+    el('rect',{x:138,y:y+dy,width:114,height:15,rx:7.5,fill:'url(#coil)'},g);
+    for(let i=0;i<6;i++) poles[key].push(el('circle',{cx:SX(i),cy:y+dy+7.5,r:2.9,fill:'#3a3b40',stroke:'#fff','stroke-opacity':.6,'stroke-width':.7},g));
   }
+  for(const [sx,sy] of [[136,y+23],[254,y+23]]) el('circle',{cx:sx,cy:sy,r:1.6,fill:'#8d969e'},g);
 }
-pickup(250,'neck'); pickup(440,'bridge');
+pickup(304,'neck'); pickup(440,'bridge');
 
-/* bridge saddles with the control names */
+/* bridge saddles carry the control names */
 STRINGS.forEach((s,i)=>{
   const x = SX(i);
-  el('rect',{x:x-13,y:540,width:26,height:80,rx:6,fill:'#000','fill-opacity':.38,stroke:'#fff','stroke-opacity':.35},$('saddles'));
-  const t = el('text',{class:'lab',x:x,y:580,'text-anchor':'middle',transform:`rotate(-90 ${x} 580)`,dy:3},$('saddles'));
+  el('rect',{x:x-6.6,y:510,width:13.2,height:84,rx:4,fill:'url(#steel)'},$('saddles'));
+  const t = el('text',{class:'sad',x:x,y:553,'text-anchor':'middle',transform:`rotate(-90 ${x} 553)`,dy:2.6},$('saddles'));
   t.textContent = s.lab;
 });
 
-/* strings */
+/* strings = sliders */
 STRINGS.forEach((s,i)=>{
-  const x = SX(i), w = 2.8 - i*0.28, g = el('g',{},$('strings'));
-  s.line = el('line',{x1:x,y1:-10,x2:x,y2:548,stroke:'#fff','stroke-opacity':.62,'stroke-width':w},g);
-  s.glow = el('line',{x1:x,y1:Y_BOT,x2:x,y2:548,stroke:'#ffb454','stroke-width':w+5,'stroke-opacity':.5,'stroke-linecap':'round',filter:'url(#glow)'},g);
-  s.fill = el('line',{x1:x,y1:Y_BOT,x2:x,y2:548,stroke:'#ffc57a','stroke-width':w+1,'stroke-linecap':'round'},g);
-  s.bead = el('g',{},g);
-  el('circle',{r:16,fill:'#ffb454',opacity:.35,filter:'url(#glow)'},s.bead);
-  el('circle',{r:11,fill:'url(#beadG)',stroke:'#fff','stroke-width':1.2},s.bead);
+  const x = SX(i), w = 2.1 - i*0.22, g = el('g',{},$('strings'));
+  el('line',{x1:x,y1:-10,x2:x,y2:NECK_END,stroke:'#e9ebee','stroke-width':w},g);
+  el('line',{x1:x+1.2,y1:NECK_END,x2:x+1.2,y2:514,stroke:'#000','stroke-opacity':.12,'stroke-width':w},g);
+  el('line',{x1:x,y1:NECK_END,x2:x,y2:514,stroke:'#7b8188','stroke-width':w},g);
+  s.fill = el('line',{x1:x,y1:Y_BOT,x2:x,y2:514,stroke:'#e2672f','stroke-width':w+1.3,'stroke-linecap':'round'},g);
+  s.pos = el('g',{},g);
+  s.bead = el('g',{class:'bead'},s.pos);
+  el('circle',{cy:1.5,r:7.5,fill:'#000',opacity:.25,filter:'url(#glow)'},s.bead);
+  el('circle',{r:6.6,fill:'url(#beadG)',stroke:'#fff','stroke-width':1.1},s.bead);
   s.g = g; s.x = x;
-  const hit = el('rect',{class:'hit',x:x-16,y:Y_TOP-14,width:32,height:Y_BOT-Y_TOP+28},g);
-  let drag = false;
+});
+{ // one touch area: grabs whichever string is nearest to the finger
+  const hit = el('rect',{x:140,y:Y_TOP-14,width:110,height:Y_BOT-Y_TOP+30,fill:'transparent',style:'cursor:ns-resize'},$('strings'));
+  let cur = null;
   const upd = e => {
-    const f = Math.min(1,Math.max(0,(Y_BOT - svgPt(e).y)/(Y_BOT-Y_TOP)));
+    const p = svgPt(e), s = cur;
+    const f = Math.min(1,Math.max(0,(Y_BOT - p.y)/(Y_BOT-Y_TOP)));
     let v = s.min + f*(s.max-s.min); v = Math.round(v/s.step)*s.step;
     setVal(s.k, v); flash(s.name, s.fmt(v));
+    const y = Y_BOT - (v-s.min)/(s.max-s.min)*(Y_BOT-Y_TOP);
+    $('tip').setAttribute('transform',`translate(0 ${y})`); $('tipT').textContent = s.fmt(v);
   };
-  hit.addEventListener('pointerdown',e=>{drag=true; try{hit.setPointerCapture(e.pointerId);}catch(_){} upd(e); e.preventDefault();});
-  hit.addEventListener('pointermove',e=>{ if(drag) upd(e); });
-  const end = ()=>{ if(!drag) return; drag=false; g.classList.remove('pluck'); void g.getBBox(); g.classList.add('pluck'); };
+  hit.addEventListener('pointerdown',e=>{
+    const i = Math.min(5,Math.max(0,Math.round((svgPt(e).x-SX(0))/16)));
+    cur = STRINGS[i]; cur.bead.style.transform='scale(1.5)';
+    try{hit.setPointerCapture(e.pointerId);}catch(_){}
+    $('tip').style.display=''; upd(e); e.preventDefault();
+  });
+  hit.addEventListener('pointermove',e=>{ if(cur) upd(e); });
+  const end = ()=>{ if(!cur) return; const g=cur.g; cur.bead.style.transform=''; cur=null; $('tip').style.display='none';
+    g.classList.remove('pluck'); void g.getBBox(); g.classList.add('pluck'); };
   hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end);
-});
+}
 
 /* knobs */
 KNOBS.forEach(kn=>{
   const g = el('g',{class:'btn'},$('knobs')), {cx,cy,r} = kn;
   for(let a=-135;a<=135;a+=27){
     const rad=(a-90)*Math.PI/180;
-    el('line',{x1:cx+Math.cos(rad)*(r+4),y1:cy+Math.sin(rad)*(r+4),x2:cx+Math.cos(rad)*(r+8),y2:cy+Math.sin(rad)*(r+8),stroke:'#fff','stroke-opacity':.6,'stroke-width':1.2},g);
+    el('line',{x1:cx+Math.cos(rad)*(r+7),y1:cy+Math.sin(rad)*(r+7),x2:cx+Math.cos(rad)*(r+10),y2:cy+Math.sin(rad)*(r+10),stroke:'#8d969e','stroke-width':1},g);
   }
-  kn.arc = el('path',{fill:'none',stroke:'#ffb454','stroke-width':3,'stroke-linecap':'round'},g);
-  el('circle',{cx,cy,r,fill:'url(#knobG)',stroke:'#fff','stroke-opacity':.8,'stroke-width':1.4},g);
+  kn.arc = el('path',{fill:'none',stroke:'#e2672f','stroke-width':2.4,'stroke-linecap':'round'},g);
+  el('circle',{cx,cy:cy+2,r,fill:'#000',opacity:.18,filter:'url(#glow)'},g);
+  el('circle',{cx,cy,r,fill:'url(#knobG)',stroke:'#8d969e','stroke-width':1},g);
+  el('circle',{cx,cy,r:r*0.62,fill:'#fff','fill-opacity':.55,stroke:'#b3bac1','stroke-width':.8},g);
   kn.ptr = el('g',{},g);
-  el('line',{x1:cx,y1:cy-r+5,x2:cx,y2:cy-r*0.35,stroke:'#fff','stroke-width':3,'stroke-linecap':'round'},kn.ptr);
-  const t = el('text',{class:'lab',x:cx,y:cy+r+19,'text-anchor':'middle'},g); t.textContent = kn.lab;
-  const hit = el('circle',{cx,cy,r:r+10,fill:'transparent',style:'cursor:ns-resize'},g);
+  el('line',{x1:cx,y1:cy-r+4,x2:cx,y2:cy-r*0.45,stroke:'#2b2b30','stroke-width':2.4,'stroke-linecap':'round'},kn.ptr);
+  const t = el('text',{class:'lab',x:cx,y:cy+r+22,'text-anchor':'middle'},g); t.textContent = kn.lab;
+  const hit = el('circle',{cx,cy,r:r+12,fill:'transparent',style:'cursor:ns-resize'},g);
   let drag=false, y0=0, v0=0;
-  hit.addEventListener('pointerdown',e=>{drag=true; try{hit.setPointerCapture(e.pointerId);}catch(_){} y0=svgPt(e).y; v0=state[kn.k]; flash(kn.name, kn.fmt(v0)+'  ·  drag up or down'); e.preventDefault();});
+  hit.addEventListener('pointerdown',e=>{drag=true; try{hit.setPointerCapture(e.pointerId);}catch(_){} y0=svgPt(e).y; v0=state[kn.k]; flash(kn.name, kn.fmt(v0)+' · slide up/down'); e.preventDefault();});
   hit.addEventListener('pointermove',e=>{
     if(!drag) return;
     let v = v0 + (y0 - svgPt(e).y)/150*(kn.max-kn.min);
@@ -281,6 +546,12 @@ function arcPath(cx,cy,r,a0,a1){
   const p=a=>{const t=(a-90)*Math.PI/180; return [cx+Math.cos(t)*r, cy+Math.sin(t)*r];};
   const [x0,y0]=p(a0),[x1,y1]=p(a1);
   return `M${x0} ${y0} A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${x1} ${y1}`;
+}
+function setPower(on){
+  $('powerT').textContent = on?'STOP':'START';
+  $('powerT').style.fill = on?'#fff':'#2b2b30';
+  $('powerDisc').style.fill = on?'#e2672f':'url(#knobG)';
+  $('powerGlow').setAttribute('opacity', on?'.55':'0');
 }
 
 /* readout near the bridge */
@@ -480,8 +751,7 @@ async function start(){
   n.master.connect(n.limiter); n.limiter.connect(ctx.destination);
 
   applyAll();
-  $('powerT').textContent='STOP'; $('powerGlow').setAttribute('opacity','.75'); $('powerT').style.fill='#2a1705';
-  $('powerDisc').setAttribute('fill','#ffb454');
+  setPower(true);
   setStatus('Listening — tap LEARN, then play');
   if(n.noWorklet) showErr('Noise removal is not supported in this browser. Please update iOS.');
   listMics(); meterLoop();
@@ -491,17 +761,15 @@ function stop(){
   if(stream) stream.getTracks().forEach(t=>t.stop());
   if(ctx) ctx.close();
   ctx=null; stream=null; nodes={}; noiseLearned=false;
-  $('powerT').textContent='START'; $('powerGlow').setAttribute('opacity','0'); $('powerT').style.fill='#fff';
-  $('powerDisc').setAttribute('fill','url(#knobG)');
+  setPower(false);
   setStatus('Tap START and play'); lightPoles(0,false);
-  document.documentElement.style.setProperty('--lvl',0);
 }
 
 /* pickup lights: top pickup = how loud, bottom pickup = "I hear you" */
 function lightPoles(level, hearing){
   const on = Math.round(Math.min(1,level)*6);
-  poles.neck.forEach((p,i)=> p.setAttribute('fill', (i%6)<on ? '#fff3d6' : '#2a1a14'));
-  poles.bridge.forEach(p=> p.setAttribute('fill', hearing ? '#8dff9a' : '#2a1a14'));
+  poles.neck.forEach((p,i)=> p.setAttribute('fill', (i%6)<on ? '#fff1c9' : '#3a3b40'));
+  poles.bridge.forEach(p=> p.setAttribute('fill', hearing ? '#59e38a' : '#3a3b40'));
 }
 function meterLoop(){
   const buf=new Float32Array(nodes.analyser.fftSize); let sm=0;
@@ -511,7 +779,6 @@ function meterLoop(){
     let peak=0; for(const v of buf) peak=Math.max(peak,Math.abs(v));
     sm = Math.max(peak, sm*0.9);
     lightPoles(sm*3, peak>gateThresh(state.gate));
-    document.documentElement.style.setProperty('--lvl', Math.min(1,sm*3).toFixed(2));
     if(measuring) measuring.max=Math.max(measuring.max,peak);
     raf=requestAnimationFrame(tick);
   };
@@ -542,19 +809,19 @@ function learn(){
   },2000);
 }
 
-/* ---------- apply state to the glass guitar + the audio ---------- */
+/* ---------- apply state to the guitar + the audio ---------- */
 const ramp=(param,v)=>{ if(ctx) param.setTargetAtTime(v, ctx.currentTime, 0.03); };
 function applyAll(){
   const s=state, n=nodes;
   for(const st of STRINGS){
     const f=(s[st.k]-st.min)/(st.max-st.min), y=Y_BOT - f*(Y_BOT-Y_TOP);
-    st.bead.setAttribute('transform',`translate(${st.x} ${y})`);
-    st.fill.setAttribute('y1',y); st.glow.setAttribute('y1',y);
+    st.pos.setAttribute('transform',`translate(${st.x} ${y})`);
+    st.fill.setAttribute('y1',y);
   }
   for(const kn of KNOBS){
     const f=(s[kn.k]-kn.min)/(kn.max-kn.min), a=-135+270*f;
     kn.ptr.setAttribute('transform',`rotate(${a} ${kn.cx} ${kn.cy})`);
-    kn.arc.setAttribute('d', f>0.005 ? arcPath(kn.cx,kn.cy,kn.r+6,-135,a) : '');
+    kn.arc.setAttribute('d', f>0.005 ? arcPath(kn.cx,kn.cy,kn.r+4,-135,a) : '');
   }
   $('timeV').textContent=(s.time/1000).toFixed(2)+' s';
   $('fbV').textContent=s.fb+'%';
@@ -585,7 +852,7 @@ function setVal(k,v){
   applyAll();
   if(k==='decay') refreshIR();
 }
-function markPreset(name){ [...fretG.children].forEach(g=>g.classList.toggle('active', g.dataset.name===name)); }
+function markPreset(name){ [...preG.children].forEach(g=>g.classList.toggle('active', g.dataset.name===name)); }
 function choosePreset(name){
   const old=state.decay; Object.assign(state,PRESETS[name]);
   markPreset(name); applyAll(); if(state.decay!==old) refreshIR();
@@ -609,6 +876,8 @@ $('mic').addEventListener('change',async e=>{
 });
 try{ state.mic=localStorage.getItem('pr_mic')||''; }catch(_){}
 markPreset('Reverb 1'); applyAll();
+/* liquid glass on the settings sheet (real refraction in Chrome, frosted blur on iPhone) */
+try{ liquidGlass($('sheet'), {scale:-70, chroma:4, radius:26, blur:6, fallbackBlur:22}); }catch(_){}
 </script>
 </body>
 </html>
