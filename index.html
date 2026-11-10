@@ -2,169 +2,206 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pocket Reverb — live guitar reverb</title>
 <style>
-  :root{ --cu:#e2672f; --ink:#2b2b30; }
+  :root{
+    --ink:#1d1b24; --sub:#5d5a68; --mute:#8a8695;
+    --violet:#7b63f2; --violet2:#9b85fa; --teal:#56c7bb; --teal2:#8be3d6;
+    --cast:22px 30px 46px -16px rgba(72,62,104,.38);
+  }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;overflow:hidden;background:#e6e4e0;color:var(--ink);
-    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none}
-  .wall{position:fixed;inset:0;background:radial-gradient(120% 85% at 45% 18%,#faf9f8 0,#ebe9e6 50%,#d2cfca 100%)}
-  #g{position:fixed;inset:0;z-index:1;width:100%;height:100%;height:100dvh;display:block;touch-action:none}
-  text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;pointer-events:none}
-  .lab{font-size:7.5px;letter-spacing:1.5px;fill:#55585e;font-weight:600}
-  .sad{font-size:7.2px;letter-spacing:1.1px;fill:#26272b;font-weight:700}
-  .pre-t{font-size:12.5px;fill:#6b6e75;font-weight:500;transition:fill .2s}
-  .pre-dot{fill:#efe9df;transition:fill .2s}
-  .pre.active .pre-t{fill:var(--cu);font-weight:700}
-  .pre.active .pre-dot{fill:var(--cu)}
-  .pre.active .pre-halo{opacity:.55}
-  .pre-halo{opacity:0;transition:opacity .2s}
-  .tap{fill:transparent;cursor:pointer}
-  .btn{cursor:pointer}
-  .bead{transition:transform .12s}
-  .pluck{animation:pluck .35s ease-out}
-  @keyframes pluck{0%{transform:translateX(0)}20%{transform:translateX(1.6px)}40%{transform:translateX(-1.2px)}60%{transform:translateX(.8px)}80%{transform:translateX(-.4px)}100%{transform:translateX(0)}}
-  #toast{position:fixed;z-index:5;top:12px;left:50%;transform:translateX(-50%);max-width:90%;color:#fff;
-    background:rgba(170,40,30,.92);border-radius:12px;padding:10px 14px;font-size:13px;display:none}
-  #sheet{position:fixed;z-index:4;left:0;right:0;bottom:0;max-height:82%;overflow:auto;
-    transform:translateY(105%);transition:transform .3s ease;
-    background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.78));
-    box-shadow:0 -18px 50px rgba(0,0,0,.18), inset 0 1px 1px rgba(255,255,255,.9), inset 0 0 0 1px rgba(255,255,255,.5);
-    border-radius:26px 26px 0 0;padding:16px 20px 28px;-webkit-user-select:auto;user-select:auto}
-  #sheet.open{transform:none}
-  #sheet h2{margin:0 0 4px;font-size:17px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
-  #sheet h2 button{background:var(--ink);border:0;color:#fff;font-size:14px;border-radius:10px;padding:8px 14px}
-  .ctl{margin:16px 0 4px}
-  .ctl label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:2px}
-  .ctl label b{color:var(--cu);font-weight:600;font-size:13px}
-  .hint{font-size:12px;color:#63666c;margin-bottom:6px;line-height:1.45}
-  .hint b{color:var(--cu)}
-  input[type=range]{width:100%;accent-color:var(--cu)}
-  select{width:100%;padding:10px;border-radius:10px;background:rgba(255,255,255,.8);color:var(--ink);border:1px solid rgba(0,0,0,.18);font-size:14px}
-  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;margin-top:16px}
-  .row small{color:#63666c;font-size:12px}
-  input[type=checkbox]{width:22px;height:22px;accent-color:var(--cu);flex:none}
+  html,body{margin:0;min-height:100%;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",sans-serif}
+  body{padding:max(18px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
+
+  /* ---- room lighting: warm window light top-left, cool shadow falling diagonally ---- */
+  .room{position:fixed;inset:0;z-index:-2;
+    background:
+      linear-gradient(117deg, rgba(0,0,0,0) 0 50%, rgba(66,72,100,.20) 64%, rgba(58,64,92,.42) 82%, rgba(52,58,86,.5) 100%),
+      radial-gradient(85% 60% at 12% 6%, #fdf6ef 0, #efe4de 40%, #d9cfd4 75%, #c7bfca 100%)}
+  .spill{position:fixed;z-index:-1;border-radius:50%;filter:blur(46px);opacity:.55;pointer-events:none}
+  .s1{width:220px;height:160px;right:-40px;top:52%;background:#c48cf0}
+  .s2{width:180px;height:140px;right:20px;top:66%;background:#7fd8d6}
+  .s3{width:200px;height:150px;left:-60px;bottom:4%;background:#f6b0c4;opacity:.4}
+
+  .wrap{max-width:440px;margin:0 auto}
+
+  /* ---- big outer glass sheet (like the kit's frame) ---- */
+  .frame{position:relative;border-radius:36px;padding:22px 16px 18px;
+    background:linear-gradient(160deg,rgba(255,255,255,.34),rgba(255,255,255,.10));
+    box-shadow:30px 40px 70px -24px rgba(60,54,96,.42), inset 0 1px 1px rgba(255,255,255,.95),
+      inset 0 0 0 1px rgba(255,255,255,.55), inset 0 -14px 30px rgba(255,255,255,.12);
+    -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3)}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 18px}
+  h1{margin:0;font-size:27px;font-weight:700;letter-spacing:-.5px}
+  .tag{font-size:13px;color:var(--sub);margin-top:3px}
+  .orb{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(255,255,255,.25));
+    box-shadow:6px 9px 16px -4px rgba(72,62,104,.35), inset 0 0 0 1.5px rgba(160,140,250,.6), inset 0 0 0 3px rgba(130,220,210,.25)}
+  .orb i{width:8px;height:8px;border-radius:50%;background:#a7a2b5;transition:.2s}
+  .orb.on i{background:#4ad48a;box-shadow:0 0 10px #4ad48a}
+
+  /* ---- glass cards ---- */
+  .glass{position:relative;border-radius:28px;padding:18px 16px;margin-top:16px;
+    background:linear-gradient(165deg,rgba(255,255,255,.46),rgba(255,255,255,.16));
+    box-shadow:var(--cast), inset 0 1px 1px rgba(255,255,255,.95),
+      inset 0 0 0 1px rgba(255,255,255,.6), inset 0 -10px 24px rgba(255,255,255,.1);
+    -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+  .sec{font-size:17px;font-weight:650;letter-spacing:-.2px;margin:0 0 2px}
+  .secsub{font-size:13px;color:var(--sub);margin-bottom:6px}
+
+  /* iridescent hero card */
+  .hero{background:linear-gradient(135deg,rgba(255,196,196,.72) 0%,rgba(226,178,240,.66) 38%,rgba(172,180,250,.62) 68%,rgba(150,226,222,.62) 100%)}
+  .hero::after{content:"";position:absolute;z-index:-1;left:12%;right:-4%;bottom:-18px;height:46px;border-radius:50%;
+    background:linear-gradient(90deg,#f7a6c6,#b58cf4 45%,#7fd9e0);filter:blur(22px);opacity:.75}
+  .status{font-size:21px;font-weight:650;letter-spacing:-.3px;min-height:28px}
+  .hint{font-size:13px;color:var(--sub);margin-top:3px;line-height:1.4}
+  .meter{height:12px;border-radius:6px;margin:16px 0 4px;overflow:hidden;
+    background:rgba(255,255,255,.45);box-shadow:inset 0 1px 3px rgba(60,50,90,.18), inset 0 0 0 1px rgba(255,255,255,.7)}
+  .meter i{display:block;height:100%;width:0;border-radius:6px;transition:width .06s;
+    background:linear-gradient(90deg,#8b70f6,#c58cf0 55%,#7ad9d2);box-shadow:0 0 12px rgba(160,120,250,.8)}
+  .metarow{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
+  .metarow b{font-weight:600}
+  #hear.on{color:#1f9d5a}
+
+  /* ---- glass pill buttons ---- */
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  .pill{position:relative;border:0;border-radius:999px;height:54px;font:600 16px/1 inherit;font-family:inherit;color:#fff;cursor:pointer;
+    transition:transform .12s, box-shadow .2s}
+  .pill:active{transform:scale(.97)}
+  .pill::before{content:"";position:absolute;left:10%;right:10%;top:3px;height:42%;border-radius:999px;
+    background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));pointer-events:none}
+  .primary{background:linear-gradient(180deg,var(--violet2),var(--violet));
+    box-shadow:14px 18px 26px -10px rgba(100,70,220,.55), inset 0 0 0 1.5px rgba(255,255,255,.45), inset 0 -4px 10px rgba(60,30,170,.25)}
+  .primary.on{background:linear-gradient(180deg,#ff9fb4,#f0668a);box-shadow:14px 18px 26px -10px rgba(230,80,120,.55), inset 0 0 0 1.5px rgba(255,255,255,.45)}
+  .secondary{background:linear-gradient(180deg,var(--teal2),var(--teal));
+    box-shadow:14px 18px 26px -10px rgba(50,170,160,.55), inset 0 0 0 1.5px rgba(255,255,255,.5), inset 0 -4px 10px rgba(20,120,110,.2)}
+  .secondary:disabled{opacity:.75}
+
+  /* ---- presets: segmented glass tabs ---- */
+  .tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:6px;margin:10px -4px 0;border-radius:28px;
+    background:rgba(255,255,255,.28);box-shadow:inset 0 1px 3px rgba(60,50,90,.14), inset 0 0 0 1px rgba(255,255,255,.65)}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:1 0 auto;position:relative;border:0;background:transparent;border-radius:999px;padding:12px 16px 14px;
+    font:600 14.5px/1 inherit;font-family:inherit;color:var(--ink);cursor:pointer;transition:background .2s,box-shadow .2s}
+  .tab.active{background:linear-gradient(180deg,#fff,#f3f0f7);
+    box-shadow:6px 9px 16px -6px rgba(72,62,104,.35), inset 0 0 0 1px rgba(255,255,255,.9)}
+  .tab.active::after{content:"";position:absolute;left:22%;right:22%;bottom:5px;height:3px;border-radius:2px;background:var(--violet)}
+
+  /* ---- sliders: glass pill track, white glass knob ---- */
+  .ctl{margin-top:18px}
+  .ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600}
+  .ctl label b{color:var(--violet);font-weight:650;font-size:14px}
+  .ctl .hint{margin:2px 0 0}
+  .ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:32px;margin:8px 0 2px;border-radius:16px;outline:none;cursor:pointer;
+    background:linear-gradient(90deg,rgba(139,112,246,.92),rgba(184,140,240,.9) 60%,rgba(122,214,210,.92)) 0 0/var(--p,50%) 100% no-repeat, rgba(255,255,255,.38);
+    box-shadow:inset 0 1px 3px rgba(60,50,90,.2), inset 0 0 0 1px rgba(255,255,255,.7)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;
+    background:radial-gradient(circle at 35% 28%,#fff 0,#f6f3fa 55%,#ddd7e8 100%);
+    box-shadow:5px 7px 12px -2px rgba(60,50,90,.38), inset 0 0 0 1px rgba(255,255,255,.95)}
+  input[type=range]::-moz-range-thumb{width:32px;height:32px;border:0;border-radius:50%;
+    background:radial-gradient(circle at 35% 28%,#fff 0,#f6f3fa 55%,#ddd7e8 100%);box-shadow:5px 7px 12px -2px rgba(60,50,90,.38)}
+  input[type=range]::-moz-range-track{background:transparent}
+
+  /* ---- glass switch (kit toggle) ---- */
+  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px}
+  .row span{font-size:15px;font-weight:600}
+  .row small{display:block;font-size:12.5px;font-weight:400;color:var(--sub);margin-top:2px;line-height:1.35}
+  input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;position:relative;width:62px;height:34px;border-radius:17px;cursor:pointer;margin:0;
+    background:rgba(255,255,255,.32);transition:background .2s, box-shadow .2s;
+    box-shadow:inset 0 1px 3px rgba(60,50,90,.2), inset 0 0 0 1.5px rgba(255,255,255,.7)}
+  input[type=checkbox]::before{content:"";position:absolute;top:2px;left:2px;width:30px;height:30px;border-radius:50%;transition:transform .22s;
+    background:radial-gradient(circle at 35% 28%,#fff,#efebf5 60%,#dcd6e7);box-shadow:4px 6px 10px -2px rgba(60,50,90,.38)}
+  input[type=checkbox]:checked{background:linear-gradient(90deg,rgba(155,133,250,.35),rgba(110,215,205,.35));
+    box-shadow:inset 0 0 0 2px #a28ff8, inset 0 0 0 3.5px rgba(120,220,210,.55), 0 0 14px rgba(150,130,250,.35)}
+  input[type=checkbox]:checked::before{transform:translateX(28px)}
+
+  /* ---- mic picker: glass search-style pill ---- */
+  .field{display:flex;align-items:center;gap:10px;margin-top:10px;padding:0 16px;height:52px;border-radius:999px;
+    background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.5));
+    box-shadow:8px 12px 20px -10px rgba(72,62,104,.35), inset 0 0 0 1px rgba(255,255,255,.9)}
+  .field svg{flex:none}
+  .field select{flex:1;min-width:0;border:0;background:transparent;font:500 15px inherit;font-family:inherit;color:var(--ink);
+    -webkit-appearance:none;appearance:none;outline:none;height:100%}
+
+  details>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+  details>summary::-webkit-details-marker{display:none}
+  .chev{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;transition:transform .25s;
+    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.95),rgba(255,255,255,.4));
+    box-shadow:5px 7px 12px -4px rgba(72,62,104,.35), inset 0 0 0 1.5px rgba(160,140,250,.55)}
+  details[open] .chev{transform:rotate(90deg)}
+  .tips{font-size:12.5px;color:var(--sub);line-height:1.5;padding:4px 8px 0}
+  .tips b{color:var(--ink)}
+
+  #toast{position:fixed;z-index:9;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);max-width:90%;
+    padding:12px 16px;border-radius:18px;font-size:14px;display:none;color:var(--ink);
+    background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    box-shadow:10px 14px 30px -10px rgba(72,62,104,.45), inset 0 0 0 1.5px rgba(240,100,130,.6)}
 </style>
 </head>
 <body>
-<div class="wall"></div>
+<div class="room"></div>
+<div class="spill s1"></div><div class="spill s2"></div><div class="spill s3"></div>
 <div id="toast"></div>
 
-<svg id="g" viewBox="0 0 390 700" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <path id="bodyP" d="M64 84 C36 90 22 160 38 240 C48 290 44 330 30 372 C8 430 -6 480 -4 540 C-2 630 80 692 195 692 C310 692 392 630 394 540 C396 480 372 430 350 384 C336 350 338 318 350 290 C362 262 364 240 348 222 C326 214 306 240 292 266 C280 288 262 296 244 296 L146 296 C128 296 112 284 104 258 C97 205 104 104 64 84 Z"/>
-    <clipPath id="bodyClip"><use href="#bodyP"/></clipPath>
-    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".42"/>
-      <stop offset=".5" stop-color="#f1f4f6" stop-opacity=".16"/>
-      <stop offset="1" stop-color="#fff" stop-opacity=".26"/>
-    </linearGradient>
-    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#39231a"/><stop offset=".5" stop-color="#5d3c2c"/><stop offset="1" stop-color="#39231a"/>
-    </linearGradient>
-    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#b4b9bf"/><stop offset=".5" stop-color="#f6f7f8"/><stop offset="1" stop-color="#a9aeb5"/>
-    </linearGradient>
-    <linearGradient id="coil" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f39563"/><stop offset="1" stop-color="#c9552a"/>
-    </linearGradient>
-    <radialGradient id="beadG" cx=".35" cy=".3" r=".85">
-      <stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#f5a878"/><stop offset="1" stop-color="#d9571f"/>
-    </radialGradient>
-    <radialGradient id="knobG" cx=".35" cy=".28" r=".95">
-      <stop offset="0" stop-color="#fff" stop-opacity=".98"/><stop offset=".6" stop-color="#e3e7eb" stop-opacity=".7"/><stop offset="1" stop-color="#aeb6be" stop-opacity=".55"/>
-    </radialGradient>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
-    <filter id="edge" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>
-    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
-  </defs>
+<div class="wrap"><div class="frame">
+  <header>
+    <div><h1>Pocket Reverb</h1><div class="tag">Live reverb for your guitar</div></div>
+    <div class="orb" id="orb"><i></i></div>
+  </header>
 
-  <text x="16" y="34" style="font-family:Georgia,serif;font-style:italic;font-size:19px;fill:#2b2b30">Pocket Reverb</text>
+  <!-- play -->
+  <section class="glass hero lg">
+    <div class="status" id="status">Ready when you are</div>
+    <div class="hint" id="statusHint">Put on headphones, then tap Start.</div>
+    <div class="meter"><i id="meterFill"></i></div>
+    <div class="metarow"><span>Input level</span><b id="hear">● waiting</b></div>
+    <div class="btns">
+      <button class="pill primary" id="power">Start</button>
+      <button class="pill secondary" id="learn">Learn noise</button>
+    </div>
+  </section>
 
-  <!-- shadow the clear body throws on the wall -->
-  <use href="#bodyP" fill="#000" opacity=".07" filter="url(#soft)" transform="translate(16 18)"/>
-  <use href="#bodyP" fill="none" stroke="#1d2126" stroke-opacity=".3" stroke-width="7" filter="url(#edge)" transform="translate(14 16)"/>
+  <!-- presets -->
+  <section class="glass lg">
+    <div class="sec">Presets</div>
+    <div class="secsub">Pick a sound to start from.</div>
+    <div class="tabs" id="tabs"></div>
+  </section>
 
-  <!-- clear acrylic body -->
-  <use href="#bodyP" fill="url(#glass)"/>
-  <g clip-path="url(#bodyClip)">
-    <use href="#bodyP" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="40" filter="url(#soft)"/>
-    <use href="#bodyP" fill="none" stroke="#59636d" stroke-opacity=".3" stroke-width="15.5"/>
-    <use href="#bodyP" fill="none" stroke="#fdfdfd" stroke-opacity=".9" stroke-width="13"/>
-    <use href="#bodyP" fill="none" stroke="#7f8a94" stroke-opacity=".35" stroke-width="2.4"/>
-    <path d="M60 130 C50 200 70 280 52 350" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" filter="url(#glow)" opacity=".9"/>
-    <path d="M40 420 C22 470 20 540 40 590" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" filter="url(#glow)" opacity=".8"/>
-    <path d="M362 440 C378 490 378 560 352 610" fill="none" stroke="#6d7780" stroke-width="2" stroke-linecap="round" filter="url(#glow)" opacity=".35"/>
-  </g>
-  <use href="#bodyP" fill="none" stroke="#8d969e" stroke-opacity=".75" stroke-width=".9"/>
+  <!-- shape -->
+  <section class="glass lg">
+    <div class="sec">Shape your reverb</div>
+    <div id="shape"></div>
+  </section>
 
-  <!-- neck -->
-  <rect x="150" y="-6" width="98" height="306" rx="5" fill="#000" opacity=".18" filter="url(#edge)" transform="translate(8 6)"/>
-  <path d="M146 -10 H244 V286 a8 8 0 0 1 -8 8 H154 a8 8 0 0 1 -8 -8 Z" fill="url(#wood)"/>
-  <g id="frets"></g>
-  <g id="presets"></g>
+  <!-- noise -->
+  <section class="glass lg">
+    <div class="sec">Background noise</div>
+    <div class="secsub">Tap <b>Learn noise</b> and stay quiet for 3 seconds first.</div>
+    <div id="noise"></div>
+    <div class="field">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      <select id="mic"><option value="">Default mic (tap Start to see all)</option></select>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="row"><span>Guitar focus<small>Cuts low rumble and high hiss.</small></span><input type="checkbox" id="focus"></div>
+    <div class="row"><span>iPhone voice isolation<small>Apple's own noise removal. Strong, but can thin the guitar.</small></span><input type="checkbox" id="apple"></div>
+  </section>
 
-  <g id="pickups"></g>
+  <!-- more -->
+  <details class="glass lg" id="moreBox">
+    <summary><div><div class="sec">More sound options</div><div class="secsub" style="margin:0">Brightness, echo, mic boost</div></div>
+      <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></span></summary>
+    <div id="more"></div>
+    <div class="row"><span>Hear my guitar too<small>Only for an electric guitar plugged in.</small></span><input type="checkbox" id="dry"></div>
+  </details>
 
-  <!-- bridge -->
-  <rect x="136" y="502" width="118" height="100" rx="10" fill="#000" opacity=".2" filter="url(#edge)" transform="translate(6 6)"/>
-  <rect x="136" y="502" width="118" height="100" rx="10" fill="#27282c" stroke="#8a8f96" stroke-width=".8"/>
-  <g id="saddles"></g>
-
-  <g id="strings"></g>
-
-  <!-- START -->
-  <g id="power" class="btn">
-    <circle cx="62" cy="470" r="34" fill="#e2672f" opacity="0" id="powerGlow" filter="url(#soft)"/>
-    <circle cx="62" cy="472" r="30" fill="#000" opacity=".16" filter="url(#glow)"/>
-    <circle cx="62" cy="470" r="30" stroke="#e2672f" stroke-width="2" id="powerDisc" style="fill:url(#knobG)"/>
-    <text id="powerT" x="62" y="474" text-anchor="middle" style="font-size:10.5px;font-weight:700;letter-spacing:1.6px;fill:#2b2b30">START</text>
-  </g>
-  <!-- Learn room noise -->
-  <g id="learn" class="btn">
-    <circle cx="72" cy="567" r="21" fill="#000" opacity=".14" filter="url(#glow)"/>
-    <circle cx="72" cy="565" r="21" fill="url(#knobG)" stroke="#8d969e" stroke-width="1"/>
-    <text id="learnT" x="72" y="568.5" text-anchor="middle" style="font-size:8.5px;font-weight:700;letter-spacing:1.1px;fill:#2b2b30">LEARN</text>
-    <text class="lab" x="72" y="601" text-anchor="middle">ROOM NOISE</text>
-  </g>
-
-  <g id="knobs"></g>
-
-  <!-- More -->
-  <g id="more" class="btn">
-    <circle cx="318" cy="634" r="13" fill="url(#knobG)" stroke="#8d969e" stroke-width="1"/>
-    <circle cx="312.5" cy="634" r="1.6" fill="#2b2b30"/><circle cx="318" cy="634" r="1.6" fill="#2b2b30"/><circle cx="323.5" cy="634" r="1.6" fill="#2b2b30"/>
-    <circle cx="318" cy="634" r="22" fill="transparent"/>
-  </g>
-
-  <!-- readout near the bridge -->
-  <rect x="96" y="620" width="198" height="28" rx="14" fill="#fff" fill-opacity=".72" stroke="#000" stroke-opacity=".12"/>
-  <text id="ro" x="195" y="638.5" text-anchor="middle" style="font-size:11.5px;fill:#2b2b30;font-weight:500">Tap START and play</text>
-
-  <!-- value bubble while sliding a string -->
-  <g id="tip" style="display:none">
-    <rect x="34" y="-13" width="98" height="26" rx="13" fill="#2b2b30"/>
-    <path d="M131 -5 L139 0 L131 5 Z" fill="#2b2b30"/>
-    <text id="tipT" x="83" y="4" text-anchor="middle" style="font-size:11.5px;fill:#fff;font-weight:600"></text>
-  </g>
-</svg>
-
-<div id="sheet">
-  <h2>More settings <button id="closeSheet">Done</button></h2>
-  <div class="ctl"><label>Microphone</label>
-    <div class="hint">Choose <b>iPhone Microphone</b> and keep the phone close to the guitar.</div>
-    <select id="mic"><option value="">Default (tap START to see the list)</option></select></div>
-  <div class="ctl"><label>Gap between echoes <b id="timeV"></b></label><input id="time" type="range" min="60" max="900"></div>
-  <div class="ctl"><label>Number of echoes <b id="fbV"></b></label><input id="fb" type="range" min="0" max="85"></div>
-  <div class="ctl"><label>Ignore very quiet sounds <b id="gateV"></b></label>
-    <div class="hint">The lower pickup lights green while the app hears you. Lower this if soft notes get cut off.</div>
-    <input id="gate" type="range" min="0" max="100"></div>
-  <div class="row"><span>Guitar focus<br><small>Cuts very low rumble and very high hiss.</small></span><input id="focus" type="checkbox"></div>
-  <div class="row"><span>iPhone voice isolation<br><small>Apple's own noise removal. Strong, but can thin the guitar.</small></span><input id="apple" type="checkbox"></div>
-  <div class="row"><span>Hear my guitar through the headphones too<br><small>Only for electric guitar plugged in.</small></span><input id="dry" type="checkbox"></div>
-  <div class="hint" style="margin-top:18px"><b>Tips:</b> phone 20–30 cm from the soundhole, headphones on. Tap LEARN and stay quiet for 3 seconds so the app can remove your room's noise.</div>
-</div>
+  <div class="tips"><b>Best results:</b> phone 20–30 cm from the soundhole, <b>iPhone Microphone</b> selected, wired headphones on.</div>
+</div></div>
 
 <script>
 /*!
@@ -404,9 +441,6 @@
 </script>
 <script>
 const $ = id => document.getElementById(id);
-const NS = 'http://www.w3.org/2000/svg';
-const el = (tag, attrs={}, parent) => { const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; };
-const svg = $('g');
 
 const PRESETS = {
   "Reverb 1":   {mix:15, decay:21, pre:40,  tone:6500, echo:0,  time:300, fb:0, vol:250},  // Parth's favourite
@@ -420,148 +454,66 @@ const PRESETS = {
 let state = {vol:250, ...PRESETS["Reverb 1"], gain:150, dry:false, gate:10, focus:true, nr:60, apple:false, mic:''};
 let ctx, stream, nodes = {}, irTimer, raf, measuring = null, noiseLearned = false;
 const gateThresh = v => Math.pow(v/100, 2) * 0.4;
-const nrWord = v => v===0?'off': v<35?'light': v<70?'medium':'strong';
+const nrWord = v => v===0?'Off': v<35?'Light': v<70?'Medium':'Strong';
 
-/* ---------- the six strings and two knobs ---------- */
-const STRINGS = [
-  {k:'pre',   min:0,    max:500,   step:5,   lab:'HOW SOON',  name:'Comes back',     fmt:v=> v===0?'right away':(v/1000).toFixed(2)+' s later'},
-  {k:'decay', min:3,    max:80,    step:1,   lab:'HOW LONG',  name:'Lasts',          fmt:v=>(v/10).toFixed(1)+' seconds'},
-  {k:'mix',   min:0,    max:100,   step:1,   lab:'HOW MUCH',  name:'Reverb amount',  fmt:v=>v+'%'},
-  {k:'nr',    min:0,    max:100,   step:1,   lab:'NOISE CUT', name:'Noise removal',  fmt:nrWord},
-  {k:'tone',  min:1500, max:12000, step:100, lab:'BRIGHT',    name:'Brightness',     fmt:v=> v<4500?'dark':v<8000?'warm':'bright'},
-  {k:'echo',  min:0,    max:100,   step:1,   lab:'ECHO',      name:'Echo',           fmt:v=> v? v+'%':'off'},
-];
-const KNOBS = [
-  {k:'vol',  min:0, max:400, cx:326, cy:472, r:26, lab:'VOLUME',    name:'Volume',    fmt:v=>v+'%'},
-  {k:'gain', min:0, max:600, cx:318, cy:565, r:20, lab:'MIC BOOST', name:'Mic boost', fmt:v=>v+'%'},
-];
-const REVERB_KEYS = ['pre','decay','mix','tone','echo','time','fb'];
-const SX = i => 155 + 16*i, Y_TOP = 240, Y_BOT = 492, NECK_END = 294;
-
-/* fret wires (real spacing: wider towards the top) */
-const fretY = [NECK_END]; { let s=20; for(let k=0;k<10;k++){ fretY.push(fretY[k]-s); s*=1.06; } }
-fretY.slice(1).forEach(y=>{
-  el('rect',{x:146,y:y-1.1,width:98,height:2.2,fill:'url(#steel)'},$('frets'));
-});
-
-/* presets = the inlay dots, with their names beside the neck */
-const preG = $('presets');
-Object.keys(PRESETS).forEach((name,i)=>{
-  const top = fretY[10-i], bot = fretY[9-i], yc = (top+bot)/2;
-  const g = el('g',{class:'pre btn'},preG); g.dataset.name = name;
-  el('circle',{class:'pre-halo',cx:195,cy:yc,r:9,fill:'#ff8a4a',filter:'url(#glow)'},g);
-  el('circle',{class:'pre-dot',cx:195,cy:yc,r:4.6},g);
-  el('line',{x1:247,y1:yc,x2:262,y2:yc,stroke:'#9a9da3','stroke-width':.8},g);
-  const t = el('text',{class:'pre-t',x:267,y:yc+4.3},g); t.textContent = name;
-  el('rect',{class:'tap',x:146,y:top,width:244,height:bot-top},g);
-  g.addEventListener('click',()=>choosePreset(name));
-});
-
-/* pickups */
-const poles = {neck:[], bridge:[]};
-function pickup(y, key){
-  const g = el('g',{},$('pickups'));
-  el('rect',{x:132,y:y,width:126,height:46,rx:8,fill:'#000',opacity:.16,filter:'url(#glow)',transform:'translate(4 5)'},g);
-  el('rect',{x:132,y:y,width:126,height:46,rx:8,fill:'#fff','fill-opacity':.55,stroke:'#8d969e','stroke-width':.9},g);
-  for(const dy of [6,25]){
-    el('rect',{x:138,y:y+dy,width:114,height:15,rx:7.5,fill:'url(#coil)'},g);
-    for(let i=0;i<6;i++) poles[key].push(el('circle',{cx:SX(i),cy:y+dy+7.5,r:2.9,fill:'#3a3b40',stroke:'#fff','stroke-opacity':.6,'stroke-width':.7},g));
+/* ---------- sliders ---------- */
+const SLIDERS = {
+  shape:[
+    {k:'pre',   min:0, max:500, step:5, t:'How soon it comes back', h:'Gap between plucking and hearing the reverb.', lo:'Right away', hi:'Half a second', f:v=> v===0?'right away':(v/1000).toFixed(2)+' s later'},
+    {k:'decay', min:3, max:80,  step:1, t:'How long it lasts', h:'How long the sound keeps ringing.', lo:'Short', hi:'Very long', f:v=>(v/10).toFixed(1)+' s'},
+    {k:'mix',   min:0, max:100, step:1, t:'How much reverb', lo:'A little', hi:'A lot', f:v=>v+'%'},
+    {k:'vol',   min:0, max:400, step:5, t:'Volume', lo:'Quiet', hi:'Loud', f:v=>v+'%'},
+  ],
+  noise:[
+    {k:'nr',    min:0, max:100, step:1, t:'Noise removal', h:'How hard to clean up background sound.', lo:'Off', hi:'Strong', f:nrWord},
+  ],
+  more:[
+    {k:'tone',  min:1500, max:12000, step:100, t:'Brightness', h:'Darker is warmer, brighter is sparkly.', lo:'Darker', hi:'Brighter', f:v=> v<4500?'dark':v<8000?'warm':'bright'},
+    {k:'echo',  min:0, max:100, step:1, t:'Echo amount', h:'Clear repeats of your notes.', f:v=> v? v+'%':'off'},
+    {k:'time',  min:60, max:900, step:10, t:'Gap between echoes', f:v=>(v/1000).toFixed(2)+' s'},
+    {k:'fb',    min:0, max:85, step:1, t:'Number of echoes', lo:'One', hi:'Many', f:v=>v+'%'},
+    {k:'gain',  min:0, max:600, step:5, t:'Mic boost', h:'Turn up if the level bar barely moves.', f:v=>v+'%'},
+    {k:'gate',  min:0, max:100, step:1, t:'Ignore very quiet sounds', h:'Lower this if soft notes get cut off.', f:v=> v? v+'%':'off'},
+  ],
+};
+const ALL = {}; const REVERB_KEYS = ['pre','decay','mix','tone','echo','time','fb'];
+for(const box in SLIDERS){
+  for(const s of SLIDERS[box]){
+    const d=document.createElement('div'); d.className='ctl';
+    d.innerHTML=`<label>${s.t} <b></b></label>${s.h?`<div class="hint">${s.h}</div>`:''}
+      <input type="range" min="${s.min}" max="${s.max}" step="${s.step}">
+      ${s.lo?`<div class="ends"><span>${s.lo}</span><span>${s.hi}</span></div>`:''}`;
+    $(box).appendChild(d);
+    s.inp=d.querySelector('input'); s.val=d.querySelector('b');
+    s.inp.addEventListener('input',()=>setVal(s.k,+s.inp.value));
+    ALL[s.k]=s;
   }
-  for(const [sx,sy] of [[136,y+23],[254,y+23]]) el('circle',{cx:sx,cy:sy,r:1.6,fill:'#8d969e'},g);
 }
-pickup(304,'neck'); pickup(440,'bridge');
 
-/* bridge saddles carry the control names */
-STRINGS.forEach((s,i)=>{
-  const x = SX(i);
-  el('rect',{x:x-6.6,y:510,width:13.2,height:84,rx:4,fill:'url(#steel)'},$('saddles'));
-  const t = el('text',{class:'sad',x:x,y:553,'text-anchor':'middle',transform:`rotate(-90 ${x} 553)`,dy:2.6},$('saddles'));
-  t.textContent = s.lab;
+/* ---------- presets ---------- */
+Object.keys(PRESETS).forEach(name=>{
+  const b=document.createElement('button'); b.className='tab'; b.textContent=name; b.dataset.name=name;
+  b.onclick=()=>choosePreset(name); $('tabs').appendChild(b);
 });
 
-/* strings = sliders */
-STRINGS.forEach((s,i)=>{
-  const x = SX(i), w = 2.1 - i*0.22, g = el('g',{},$('strings'));
-  el('line',{x1:x,y1:-10,x2:x,y2:NECK_END,stroke:'#e9ebee','stroke-width':w},g);
-  el('line',{x1:x+1.2,y1:NECK_END,x2:x+1.2,y2:514,stroke:'#000','stroke-opacity':.12,'stroke-width':w},g);
-  el('line',{x1:x,y1:NECK_END,x2:x,y2:514,stroke:'#7b8188','stroke-width':w},g);
-  s.fill = el('line',{x1:x,y1:Y_BOT,x2:x,y2:514,stroke:'#e2672f','stroke-width':w+1.3,'stroke-linecap':'round'},g);
-  s.pos = el('g',{},g);
-  s.bead = el('g',{class:'bead'},s.pos);
-  el('circle',{cy:1.5,r:7.5,fill:'#000',opacity:.25,filter:'url(#glow)'},s.bead);
-  el('circle',{r:6.6,fill:'url(#beadG)',stroke:'#fff','stroke-width':1.1},s.bead);
-  s.g = g; s.x = x;
-});
-{ // one touch area: grabs whichever string is nearest to the finger
-  const hit = el('rect',{x:140,y:Y_TOP-14,width:110,height:Y_BOT-Y_TOP+30,fill:'transparent',style:'cursor:ns-resize'},$('strings'));
-  let cur = null;
-  const upd = e => {
-    const p = svgPt(e), s = cur;
-    const f = Math.min(1,Math.max(0,(Y_BOT - p.y)/(Y_BOT-Y_TOP)));
-    let v = s.min + f*(s.max-s.min); v = Math.round(v/s.step)*s.step;
-    setVal(s.k, v); flash(s.name, s.fmt(v));
-    const y = Y_BOT - (v-s.min)/(s.max-s.min)*(Y_BOT-Y_TOP);
-    $('tip').setAttribute('transform',`translate(0 ${y})`); $('tipT').textContent = s.fmt(v);
-  };
-  hit.addEventListener('pointerdown',e=>{
-    const i = Math.min(5,Math.max(0,Math.round((svgPt(e).x-SX(0))/16)));
-    cur = STRINGS[i]; cur.bead.style.transform='scale(1.5)';
-    try{hit.setPointerCapture(e.pointerId);}catch(_){}
-    $('tip').style.display=''; upd(e); e.preventDefault();
-  });
-  hit.addEventListener('pointermove',e=>{ if(cur) upd(e); });
-  const end = ()=>{ if(!cur) return; const g=cur.g; cur.bead.style.transform=''; cur=null; $('tip').style.display='none';
-    g.classList.remove('pluck'); void g.getBBox(); g.classList.add('pluck'); };
-  hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end);
+/* ---------- status ---------- */
+let statusMsg='Ready when you are', roTimer=null;
+function setStatus(m, hint){
+  statusMsg=m; if(!roTimer) $('status').textContent=m;
+  if(hint!==undefined) $('statusHint').textContent=hint;
 }
-
-/* knobs */
-KNOBS.forEach(kn=>{
-  const g = el('g',{class:'btn'},$('knobs')), {cx,cy,r} = kn;
-  for(let a=-135;a<=135;a+=27){
-    const rad=(a-90)*Math.PI/180;
-    el('line',{x1:cx+Math.cos(rad)*(r+7),y1:cy+Math.sin(rad)*(r+7),x2:cx+Math.cos(rad)*(r+10),y2:cy+Math.sin(rad)*(r+10),stroke:'#8d969e','stroke-width':1},g);
-  }
-  kn.arc = el('path',{fill:'none',stroke:'#e2672f','stroke-width':2.4,'stroke-linecap':'round'},g);
-  el('circle',{cx,cy:cy+2,r,fill:'#000',opacity:.18,filter:'url(#glow)'},g);
-  el('circle',{cx,cy,r,fill:'url(#knobG)',stroke:'#8d969e','stroke-width':1},g);
-  el('circle',{cx,cy,r:r*0.62,fill:'#fff','fill-opacity':.55,stroke:'#b3bac1','stroke-width':.8},g);
-  kn.ptr = el('g',{},g);
-  el('line',{x1:cx,y1:cy-r+4,x2:cx,y2:cy-r*0.45,stroke:'#2b2b30','stroke-width':2.4,'stroke-linecap':'round'},kn.ptr);
-  const t = el('text',{class:'lab',x:cx,y:cy+r+22,'text-anchor':'middle'},g); t.textContent = kn.lab;
-  const hit = el('circle',{cx,cy,r:r+12,fill:'transparent',style:'cursor:ns-resize'},g);
-  let drag=false, y0=0, v0=0;
-  hit.addEventListener('pointerdown',e=>{drag=true; try{hit.setPointerCapture(e.pointerId);}catch(_){} y0=svgPt(e).y; v0=state[kn.k]; flash(kn.name, kn.fmt(v0)+' · slide up/down'); e.preventDefault();});
-  hit.addEventListener('pointermove',e=>{
-    if(!drag) return;
-    let v = v0 + (y0 - svgPt(e).y)/150*(kn.max-kn.min);
-    v = Math.round(Math.min(kn.max,Math.max(kn.min,v))/5)*5;
-    setVal(kn.k, v); flash(kn.name, kn.fmt(v));
-  });
-  const end=()=>{drag=false;}; hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end);
-});
-
-function svgPt(e){ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
-function arcPath(cx,cy,r,a0,a1){
-  const p=a=>{const t=(a-90)*Math.PI/180; return [cx+Math.cos(t)*r, cy+Math.sin(t)*r];};
-  const [x0,y0]=p(a0),[x1,y1]=p(a1);
-  return `M${x0} ${y0} A${r} ${r} 0 ${a1-a0>180?1:0} 1 ${x1} ${y1}`;
-}
-function setPower(on){
-  $('powerT').textContent = on?'STOP':'START';
-  $('powerT').style.fill = on?'#fff':'#2b2b30';
-  $('powerDisc').style.fill = on?'#e2672f':'url(#knobG)';
-  $('powerGlow').setAttribute('opacity', on?'.55':'0');
-}
-
-/* readout near the bridge */
-let statusMsg = 'Tap START and play', roTimer = null;
-function setStatus(m){ statusMsg=m; if(!roTimer) $('ro').textContent=m; }
 function flash(name,val){
-  $('ro').textContent = name+':  '+val;
-  clearTimeout(roTimer); roTimer=setTimeout(()=>{roTimer=null; $('ro').textContent=statusMsg;},2200);
+  $('status').textContent=name+': '+val;
+  clearTimeout(roTimer); roTimer=setTimeout(()=>{roTimer=null; $('status').textContent=statusMsg;},1800);
 }
 function showErr(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',6000); }
+function setPower(on){
+  $('power').textContent = on?'Stop':'Start';
+  $('power').classList.toggle('on',on);
+  $('orb').classList.toggle('on',on);
+  if(on) setStatus('Listening', 'Tap Learn noise, stay quiet 3 s, then play.');
+  else   setStatus('Ready when you are', 'Put on headphones, then tap Start.');
+}
 
 /* ---------- audio worklets ---------- */
 const WORKLETS = `
@@ -765,11 +717,11 @@ function stop(){
   setStatus('Tap START and play'); lightPoles(0,false);
 }
 
-/* pickup lights: top pickup = how loud, bottom pickup = "I hear you" */
+/* level bar + "hearing you" */
 function lightPoles(level, hearing){
-  const on = Math.round(Math.min(1,level)*6);
-  poles.neck.forEach((p,i)=> p.setAttribute('fill', (i%6)<on ? '#fff1c9' : '#3a3b40'));
-  poles.bridge.forEach(p=> p.setAttribute('fill', hearing ? '#59e38a' : '#3a3b40'));
+  $('meterFill').style.width=Math.min(100,level*100)+'%';
+  const h=$('hear'); h.classList.toggle('on',!!hearing);
+  h.textContent = !ctx ? '● waiting' : hearing ? '● hearing you' : '● quiet';
 }
 function meterLoop(){
   const buf=new Float32Array(nodes.analyser.fftSize); let sm=0;
@@ -777,7 +729,7 @@ function meterLoop(){
     if(!nodes.analyser) return;
     nodes.analyser.getFloatTimeDomainData(buf);
     let peak=0; for(const v of buf) peak=Math.max(peak,Math.abs(v));
-    sm = Math.max(peak, sm*0.9);
+    sm=Math.max(peak, sm*0.9);
     lightPoles(sm*3, peak>gateThresh(state.gate));
     if(measuring) measuring.max=Math.max(measuring.max,peak);
     raf=requestAnimationFrame(tick);
@@ -788,45 +740,36 @@ function meterLoop(){
 /* ---------- learn room noise ---------- */
 let learningNow=false;
 function learn(){
-  if(!ctx){ flash('First','tap START'); return; }
+  if(!ctx){ flash('First','tap Start'); return; }
   if(nodes.noWorklet || learningNow) return;
-  learningNow=true;
-  let left=3; $('learnT').textContent=left; setStatus('Shh… stay quiet');
-  const t=setInterval(()=>{ left--; if(left>0) $('learnT').textContent=left; },1000);
+  learningNow=true; const b=$('learn'); b.disabled=true;
+  let left=3; b.textContent='Quiet… '+left; setStatus('Shh… stay quiet','Learning your room\'s background sound.');
+  const t=setInterval(()=>{ left--; if(left>0) b.textContent='Quiet… '+left; },1000);
   nodes.den.port.postMessage('learnStart');
   setTimeout(()=>{
-    if(!ctx){ clearInterval(t); learningNow=false; $('learnT').textContent='LEARN'; return; }
+    if(!ctx){ clearInterval(t); learningNow=false; b.disabled=false; b.textContent='Learn noise'; return; }
     nodes.den.port.postMessage('learnStop');
     measuring={max:0};
     setTimeout(()=>{
-      clearInterval(t); learningNow=false; $('learnT').textContent='LEARN';
+      clearInterval(t); learningNow=false; b.disabled=false; b.textContent='Learn again';
       if(!ctx || !measuring) return;
       const th=Math.min(0.4,Math.max(0.0015,measuring.max*1.4));
       state.gate=Math.min(100,Math.round(Math.sqrt(th/0.4)*100));
       measuring=null; applyAll();
-      setStatus('Room noise learned ✓  Play!');
+      setStatus('Room noise learned ✓','Play away. Learn again if the room changes.');
     },900);
   },2000);
 }
 
-/* ---------- apply state to the guitar + the audio ---------- */
+/* ---------- apply state to UI + audio ---------- */
 const ramp=(param,v)=>{ if(ctx) param.setTargetAtTime(v, ctx.currentTime, 0.03); };
 function applyAll(){
   const s=state, n=nodes;
-  for(const st of STRINGS){
-    const f=(s[st.k]-st.min)/(st.max-st.min), y=Y_BOT - f*(Y_BOT-Y_TOP);
-    st.pos.setAttribute('transform',`translate(${st.x} ${y})`);
-    st.fill.setAttribute('y1',y);
+  for(const k in ALL){
+    const c=ALL[k], f=(s[k]-c.min)/(c.max-c.min);
+    c.inp.value=s[k]; c.val.textContent=c.f(s[k]);
+    c.inp.style.setProperty('--p',`calc(16px + (100% - 32px) * ${f.toFixed(4)})`);
   }
-  for(const kn of KNOBS){
-    const f=(s[kn.k]-kn.min)/(kn.max-kn.min), a=-135+270*f;
-    kn.ptr.setAttribute('transform',`rotate(${a} ${kn.cx} ${kn.cy})`);
-    kn.arc.setAttribute('d', f>0.005 ? arcPath(kn.cx,kn.cy,kn.r+4,-135,a) : '');
-  }
-  $('timeV').textContent=(s.time/1000).toFixed(2)+' s';
-  $('fbV').textContent=s.fb+'%';
-  $('gateV').textContent=s.gate? s.gate+'%' : 'off';
-  for(const k of ['time','fb','gate']) $(k).value=s[k];
   $('dry').checked=s.dry; $('focus').checked=s.focus; $('apple').checked=s.apple;
   if(!ctx) return;
   ramp(n.gain.gain, s.gain/100);
@@ -852,21 +795,16 @@ function setVal(k,v){
   applyAll();
   if(k==='decay') refreshIR();
 }
-function markPreset(name){ [...preG.children].forEach(g=>g.classList.toggle('active', g.dataset.name===name)); }
+function markPreset(name){ [...$('tabs').children].forEach(b=>b.classList.toggle('active', b.dataset.name===name)); }
 function choosePreset(name){
   const old=state.decay; Object.assign(state,PRESETS[name]);
   markPreset(name); applyAll(); if(state.decay!==old) refreshIR();
   flash('Preset', name);
-  STRINGS.forEach(s=>{ s.g.classList.remove('pluck'); void s.g.getBBox(); s.g.classList.add('pluck'); });
 }
 
-/* ---------- buttons + sheet ---------- */
+/* ---------- wiring ---------- */
 $('power').addEventListener('click',()=> ctx ? stop() : start());
 $('learn').addEventListener('click',learn);
-$('more').addEventListener('click',()=>$('sheet').classList.add('open'));
-$('closeSheet').addEventListener('click',()=>$('sheet').classList.remove('open'));
-for(const k of ['time','fb']) $(k).addEventListener('input',e=>setVal(k,+e.target.value));
-$('gate').addEventListener('input',e=>setVal('gate',+e.target.value));
 $('dry').addEventListener('change',e=>{state.dry=e.target.checked; applyAll();});
 $('focus').addEventListener('change',e=>{state.focus=e.target.checked; applyAll();});
 $('apple').addEventListener('change',async e=>{state.apple=e.target.checked; if(ctx){stop(); await start();}});
@@ -876,8 +814,11 @@ $('mic').addEventListener('change',async e=>{
 });
 try{ state.mic=localStorage.getItem('pr_mic')||''; }catch(_){}
 markPreset('Reverb 1'); applyAll();
-/* liquid glass on the settings sheet (real refraction in Chrome, frosted blur on iPhone) */
-try{ liquidGlass($('sheet'), {scale:-70, chroma:4, radius:26, blur:6, fallbackBlur:22}); }catch(_){}
+
+/* liquid glass on each card (real refraction in Chrome, frosted blur on iPhone) */
+document.querySelectorAll('.lg').forEach(c=>{
+  try{ liquidGlass(c,{scale:-56, chroma:4, blur:12, saturate:1.4, fallbackBlur:14}); }catch(_){}
+});
 </script>
 </body>
 </html>
