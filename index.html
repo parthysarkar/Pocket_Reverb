@@ -75,7 +75,10 @@
   .hero{background:linear-gradient(135deg,rgba(255,196,196,.72) 0%,rgba(226,178,240,.66) 38%,rgba(172,180,250,.62) 68%,rgba(150,226,222,.62) 100%)}
   .hero::after{content:"";position:absolute;z-index:-1;left:12%;right:-4%;bottom:-18px;height:46px;border-radius:50%;
     background:linear-gradient(90deg,#f7a6c6,#b58cf4 45%,#7fd9e0);filter:blur(22px);opacity:.75}
-  .status{font-size:21px;font-weight:650;letter-spacing:-.3px;min-height:28px}
+  .status{font-size:21px;font-weight:650;letter-spacing:-.3px;height:28px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #statusHint{height:37px;overflow:hidden}
+  .fade{transition:opacity .18s ease}
+  .pill span{display:inline-block}
   .hint{font-size:13px;color:var(--sub);margin-top:3px;line-height:1.4}
   .meter{height:12px;border-radius:6px;margin:16px 0 4px;overflow:hidden;
     background:rgba(255,255,255,.45);box-shadow:inset 0 1px 3px rgba(60,50,90,.18), inset 0 0 0 1px rgba(255,255,255,.7)}
@@ -87,8 +90,14 @@
 
   /* ---- glass pill buttons ---- */
   .btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  @property --c1{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --c2{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --castc{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --caust{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --deep{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --edge{syntax:'<color>';inherits:true;initial-value:transparent}
   .pill{position:relative;border:0;border-radius:999px;height:56px;font:600 16px/1 inherit;font-family:inherit;color:#fff;cursor:pointer;
-    text-shadow:0 1px 2px rgba(40,20,90,.35);transition:transform .12s;
+    text-shadow:0 1px 2px rgba(40,20,90,.35);transition:transform .12s, --c1 .35s, --c2 .35s, --castc .35s, --caust .35s, --deep .35s, --edge .35s;
     background:linear-gradient(180deg,var(--c1),var(--c2));
     box-shadow:
       16px 20px 26px -12px var(--castc),            /* coloured shadow on the wall   */
@@ -244,13 +253,13 @@
 
   <!-- play -->
   <section class="glass hero lg">
-    <div class="status" id="status">Ready when you are</div>
-    <div class="hint" id="statusHint">Put on headphones, then tap Start.</div>
+    <div class="status fade" id="status">Ready when you are</div>
+    <div class="hint fade" id="statusHint">Put on headphones, then tap Start.</div>
     <div class="meter"><i id="meterFill"></i></div>
     <div class="metarow"><span>Input level</span><b id="hear">● waiting</b></div>
     <div class="btns">
-      <button class="pill primary" id="power">Start</button>
-      <button class="pill secondary" id="learn">Learn noise</button>
+      <button class="pill primary" id="power"><span id="powerL" class="fade">Start</span></button>
+      <button class="pill secondary" id="learn"><span id="learnL" class="fade">Learn noise</span></button>
     </div>
   </section>
 
@@ -586,22 +595,31 @@ Object.keys(PRESETS).forEach(name=>{
 });
 
 /* ---------- status ---------- */
+/* change text with a soft fade instead of a pop */
+function fadeText(el, txt, instant){
+  if(instant){ clearTimeout(el._ft); el._ft=null; el.textContent=txt; el.style.opacity=1; return; }
+  if(el._ft){ el._next=txt; return; }
+  if(el.textContent===txt) return;
+  el._next=txt; el.style.opacity=0;
+  el._ft=setTimeout(()=>{ el._ft=null; el.textContent=el._next; el.style.opacity=1; },180);
+}
 let statusMsg='Ready when you are', roTimer=null;
 function setStatus(m, hint){
-  statusMsg=m; if(!roTimer) $('status').textContent=m;
-  if(hint!==undefined) $('statusHint').textContent=hint;
+  statusMsg=m; if(!roTimer) fadeText($('status'),m);
+  if(hint!==undefined) fadeText($('statusHint'),hint);
 }
 function flash(name,val){
-  $('status').textContent=name+': '+val;
-  clearTimeout(roTimer); roTimer=setTimeout(()=>{roTimer=null; $('status').textContent=statusMsg;},1800);
+  // while a slider is moving, update instantly; fade only on the way in and out
+  fadeText($('status'), name+': '+val, !!roTimer);
+  clearTimeout(roTimer); roTimer=setTimeout(()=>{roTimer=null; fadeText($('status'),statusMsg);},1800);
 }
 function showErr(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',6000); }
 function setPower(on){
-  $('power').textContent = on?'Stop':'Start';
+  fadeText($('powerL'), on?'Stop':'Start');
   $('power').classList.toggle('on',on);
   $('orb').classList.toggle('on',on);
-  if(on) setStatus('Listening', 'Tap Learn noise, stay quiet 3 s, then play.');
-  else   setStatus('Ready when you are', 'Put on headphones, then tap Start.');
+  if(on) setStatus('Listening', 'Tap Learn noise and stay quiet for 3 seconds, then play.');
+  else { setStatus('Ready when you are', 'Put on headphones, then tap Start.'); fadeText($('learnL'),'Learn noise'); }
 }
 
 /* ---------- audio worklets ---------- */
@@ -793,7 +811,6 @@ async function start(){
 
   applyAll();
   setPower(true);
-  setStatus('Listening — tap LEARN, then play');
   if(n.noWorklet) showErr('Noise removal is not supported in this browser. Please update iOS.');
   listMics(); meterLoop();
 }
@@ -803,7 +820,7 @@ function stop(){
   if(ctx) ctx.close();
   ctx=null; stream=null; nodes={}; noiseLearned=false;
   setPower(false);
-  setStatus('Tap START and play'); lightPoles(0,false);
+  lightPoles(0,false);
 }
 
 /* level bar + "hearing you" */
@@ -832,15 +849,15 @@ function learn(){
   if(!ctx){ flash('First','tap Start'); return; }
   if(nodes.noWorklet || learningNow) return;
   learningNow=true; const b=$('learn'); b.disabled=true;
-  let left=3; b.textContent='Quiet… '+left; setStatus('Shh… stay quiet','Learning your room\'s background sound.');
-  const t=setInterval(()=>{ left--; if(left>0) b.textContent='Quiet… '+left; },1000);
+  const L=$('learnL'); let left=3; fadeText(L,'Quiet… '+left); setStatus('Shh… stay quiet','Learning your room\'s background sound.');
+  const t=setInterval(()=>{ left--; if(left>0) fadeText(L,'Quiet… '+left,true); },1000);
   nodes.den.port.postMessage('learnStart');
   setTimeout(()=>{
-    if(!ctx){ clearInterval(t); learningNow=false; b.disabled=false; b.textContent='Learn noise'; return; }
+    if(!ctx){ clearInterval(t); learningNow=false; b.disabled=false; fadeText(L,'Learn noise'); return; }
     nodes.den.port.postMessage('learnStop');
     measuring={max:0};
     setTimeout(()=>{
-      clearInterval(t); learningNow=false; b.disabled=false; b.textContent='Learn again';
+      clearInterval(t); learningNow=false; b.disabled=false; fadeText(L,'Learn again');
       if(!ctx || !measuring) return;
       const th=Math.min(0.4,Math.max(0.0015,measuring.max*1.4));
       state.gate=Math.min(100,Math.round(Math.sqrt(th/0.4)*100));
