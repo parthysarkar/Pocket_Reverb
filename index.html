@@ -16,23 +16,41 @@
   body{padding:max(18px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
 
   /* ---- room lighting: warm window light top-left, cool shadow falling diagonally ---- */
+  /* ---- sunlit wall: warm sun from the left, cool shadow in the top-right ---- */
   .room{position:fixed;inset:0;z-index:-2;
     background:
-      linear-gradient(117deg, rgba(0,0,0,0) 0 50%, rgba(66,72,100,.20) 64%, rgba(58,64,92,.42) 82%, rgba(52,58,86,.5) 100%),
-      radial-gradient(85% 60% at 12% 6%, #fdf6ef 0, #efe4de 40%, #d9cfd4 75%, #c7bfca 100%)}
-  .spill{position:fixed;z-index:-1;border-radius:50%;filter:blur(46px);opacity:.55;pointer-events:none}
-  .s1{width:220px;height:160px;right:-40px;top:52%;background:#c48cf0}
-  .s2{width:180px;height:140px;right:20px;top:66%;background:#7fd8d6}
-  .s3{width:200px;height:150px;left:-60px;bottom:4%;background:#f6b0c4;opacity:.4}
+      linear-gradient(112deg, rgba(255,247,230,0) 8%, rgba(255,246,226,.55) 22%, rgba(255,247,232,.12) 36%, rgba(255,247,232,0) 44%),
+      radial-gradient(75% 60% at -8% 34%, rgba(255,243,222,.98) 0, rgba(255,238,216,.6) 38%, rgba(255,238,216,0) 72%),
+      linear-gradient(128deg, rgba(0,0,0,0) 0 48%, rgba(74,82,112,.24) 60%, rgba(62,70,100,.55) 80%, rgba(54,62,92,.68) 100%),
+      radial-gradient(60% 40% at 100% 0, rgba(70,80,112,.55) 0, rgba(70,80,112,0) 75%),
+      linear-gradient(100deg, #f4e3d6 0, #ead8d0 42%, #d6c8cd 72%, #c2b8c6 100%)}
+  .room::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .5  0 0 0 0 .47  0 0 0 0 .5  0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .spill{position:fixed;z-index:-1;border-radius:50%;filter:blur(40px);opacity:.6;pointer-events:none}
+  .s1{width:200px;height:150px;right:-50px;top:54%;background:#c890f2}
+  .s2{width:170px;height:130px;right:10px;top:70%;background:#7fdcd8}
+  .s3{width:150px;height:90px;right:-30px;bottom:6%;background:#ffb39a;opacity:.5}
 
   .wrap{max-width:440px;margin:0 auto}
 
   /* ---- big outer glass sheet (like the kit's frame) ---- */
+  /* ---- clear, shiny back glass ---- */
   .frame{position:relative;border-radius:36px;padding:22px 16px 18px;
-    background:linear-gradient(160deg,rgba(255,255,255,.34),rgba(255,255,255,.10));
-    box-shadow:30px 40px 70px -24px rgba(60,54,96,.42), inset 0 1px 1px rgba(255,255,255,.95),
-      inset 0 0 0 1px rgba(255,255,255,.55), inset 0 -14px 30px rgba(255,255,255,.12);
-    -webkit-backdrop-filter:blur(10px) saturate(1.3);backdrop-filter:blur(10px) saturate(1.3)}
+    background:
+      radial-gradient(40% 16% at 96% 99%, rgba(255,214,190,.5) 0, rgba(255,214,190,0) 100%),
+      linear-gradient(135deg, rgba(255,255,255,.20) 0, rgba(255,255,255,.03) 30%, rgba(255,255,255,0) 60%, rgba(255,255,255,.10) 100%);
+    box-shadow:
+      38px 50px 70px -22px rgba(52,48,88,.50),
+      14px 18px 22px -14px rgba(52,48,88,.30),
+      inset 0 0 0 1px rgba(255,255,255,.75),
+      inset 2px 2px 2px rgba(255,255,255,.95),
+      inset -2px -3px 5px rgba(96,104,150,.30),
+      inset 0 0 26px rgba(255,255,255,.16)}
+  .frame::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:
+      linear-gradient(118deg, rgba(255,255,255,.42) 0, rgba(255,255,255,.10) 9%, rgba(255,255,255,0) 17%),
+      linear-gradient(118deg, rgba(255,255,255,0) 56%, rgba(255,255,255,.14) 62%, rgba(255,255,255,0) 70%)}
+  .frame>*{position:relative}
 
   header{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 18px}
   h1{margin:0;font-size:27px;font-weight:700;letter-spacing:-.5px}
