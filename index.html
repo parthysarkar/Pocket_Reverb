@@ -251,6 +251,26 @@
   html.dark .pill.ai{box-shadow:14px 18px 26px -12px rgba(0,0,0,.75), 0 0 0 5px rgba(255,255,255,.05), 0 0 0 6px rgba(255,255,255,.06),
       inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
   html.dark .pill.ai .bloom{opacity:1;filter:blur(13px) saturate(1.5) brightness(1.9)}
+
+  /* ---- animated ShaderGradient behind the frosted hero card ---- */
+  .hero{overflow:visible}
+  .hero>*{position:relative;z-index:1}
+  .hero>.shader{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden;pointer-events:none;
+    opacity:0;transition:opacity 1.2s ease}
+  .hero>.shader.ready{opacity:1}
+  .hero>.shader canvas{display:block}
+  .hero>.shader::after{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;
+    background:linear-gradient(165deg,rgba(255,255,255,.36),rgba(255,255,255,.14));
+    -webkit-backdrop-filter:blur(7px) saturate(1.15);backdrop-filter:blur(7px) saturate(1.15)}
+  html.dark .hero>.shader::after{background:linear-gradient(165deg,rgba(20,18,40,.34),rgba(20,18,40,.14))}
+
+  /* the soft colour pools on the wall drift slowly too */
+  @keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-40px,-30px) scale(1.15)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,40px) scale(.9)}}
+  .s1{animation:drift1 14s ease-in-out infinite}
+  .s2{animation:drift2 17s ease-in-out infinite}
+  .s3{animation:drift1 20s ease-in-out infinite reverse}
+  @media (prefers-reduced-motion:reduce){.s1,.s2,.s3{animation:none}}
 </style>
 </head>
 <body>
@@ -269,6 +289,7 @@
 
   <!-- play -->
   <section class="glass hero lg">
+    <div class="shader" id="heroShader" aria-hidden="true"></div>
     <div class="status fade" id="status">Ready when you are</div>
     <div class="hint fade" id="statusHint">Put on headphones, then tap Start.</div>
     <div class="meter"><i id="meterFill"></i></div>
@@ -1015,5 +1036,6 @@ document.querySelectorAll('.lg').forEach(c=>{
   try{ liquidGlass(c,{scale:-56, chroma:4, blur:12, saturate:1.4, fallbackBlur:14}); }catch(_){}
 });
 </script>
+<script type="module" src="shader-bg.js"></script>
 </body>
 </html>
