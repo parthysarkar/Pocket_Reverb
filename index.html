@@ -252,30 +252,28 @@
       inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
   html.dark .pill.ai .bloom{opacity:1;filter:blur(13px) saturate(1.5) brightness(1.9)}
 
-  /* ---- animated ShaderGradient behind the frosted hero card ---- */
-  .hero{overflow:visible}
-  .hero>*{position:relative;z-index:1}
-  .hero>.shader{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden;pointer-events:none;
-    opacity:0;transition:opacity 1.2s ease}
-  .hero>.shader.ready{opacity:1}
-  .hero>.shader canvas{display:block}
-  .hero>.shader::after{content:"";position:absolute;inset:0;z-index:2;border-radius:inherit;
-    background:linear-gradient(165deg,rgba(255,255,255,.36),rgba(255,255,255,.14));
-    -webkit-backdrop-filter:blur(7px) saturate(1.15);backdrop-filter:blur(7px) saturate(1.15)}
-  html.dark .hero>.shader::after{background:linear-gradient(165deg,rgba(20,18,40,.34),rgba(20,18,40,.14))}
+  /* ---- the colour pools behind the clear glass drift around slowly (same colours) ---- */
+  .spill{will-change:transform}
+  .s1{width:300px;height:230px;right:-90px;top:46%;animation:roam1 19s ease-in-out infinite}
+  .s2{width:260px;height:200px;right:-30px;top:64%;animation:roam2 23s ease-in-out infinite}
+  .s3{width:260px;height:190px;left:-110px;bottom:2%;animation:roam3 27s ease-in-out infinite}
+  .s4{width:240px;height:180px;left:-90px;top:20%;background:#c48cf0;opacity:.35;animation:roam2 31s ease-in-out infinite reverse}
+  html.dark .s4{background:#8f4dff}
+  @keyframes roam1{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(-120px,-70px) scale(1.18)}50%{transform:translate(-200px,40px) scale(.92)}75%{transform:translate(-60px,110px) scale(1.1)}}
+  @keyframes roam2{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(-160px,60px) scale(1.15)}60%{transform:translate(-80px,-120px) scale(.9)}80%{transform:translate(40px,-40px) scale(1.08)}}
+  @keyframes roam3{0%,100%{transform:translate(0,0) scale(1)}35%{transform:translate(150px,-90px) scale(1.2)}70%{transform:translate(70px,-200px) scale(.95)}}
 
-  /* the soft colour pools on the wall drift slowly too */
-  @keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-40px,-30px) scale(1.15)}}
-  @keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,40px) scale(.9)}}
-  .s1{animation:drift1 14s ease-in-out infinite}
-  .s2{animation:drift2 17s ease-in-out infinite}
-  .s3{animation:drift1 20s ease-in-out infinite reverse}
-  @media (prefers-reduced-motion:reduce){.s1,.s2,.s3{animation:none}}
+  /* ---- top card: its own gradient flows (same colours, mirrored so they loop seamlessly) ---- */
+  .hero{background-size:300% 300% !important;animation:heroflow 14s ease-in-out infinite alternate}
+  .hero{background-image:linear-gradient(135deg,rgba(255,196,196,.72) 0%,rgba(226,178,240,.66) 17%,rgba(172,180,250,.62) 33%,rgba(150,226,222,.62) 50%,rgba(172,180,250,.62) 67%,rgba(226,178,240,.66) 83%,rgba(255,196,196,.72) 100%)}
+  html.dark .hero{background-image:linear-gradient(135deg,rgba(255,110,150,.34) 0%,rgba(178,104,240,.36) 17%,rgba(96,108,250,.36) 33%,rgba(46,200,196,.32) 50%,rgba(96,108,250,.36) 67%,rgba(178,104,240,.36) 83%,rgba(255,110,150,.34) 100%)}
+  @keyframes heroflow{0%{background-position:0% 30%}50%{background-position:60% 70%}100%{background-position:100% 40%}}
+  @media (prefers-reduced-motion:reduce){.spill,.hero{animation:none}}
 </style>
 </head>
 <body>
 <div class="room"></div>
-<div class="spill s1"></div><div class="spill s2"></div><div class="spill s3"></div>
+<div class="spill s1"></div><div class="spill s2"></div><div class="spill s3"></div><div class="spill s4"></div>
 <div id="toast"></div>
 
 <div class="wrap"><div class="frame">
@@ -289,7 +287,6 @@
 
   <!-- play -->
   <section class="glass hero lg">
-    <div class="shader" id="heroShader" aria-hidden="true"></div>
     <div class="status fade" id="status">Ready when you are</div>
     <div class="hint fade" id="statusHint">Put on headphones, then tap Start.</div>
     <div class="meter"><i id="meterFill"></i></div>
@@ -1036,6 +1033,5 @@ document.querySelectorAll('.lg').forEach(c=>{
   try{ liquidGlass(c,{scale:-56, chroma:4, blur:12, saturate:1.4, fallbackBlur:14}); }catch(_){}
 });
 </script>
-<script type="module" src="shader-bg.js"></script>
 </body>
 </html>
