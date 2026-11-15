@@ -155,7 +155,8 @@
 
   /* giant glass wordmark, cut off by the bottom edge */
   html.dark #wm .bev{opacity:.5}
-  #wm{position:absolute;left:0;right:0;bottom:0;z-index:1;pointer-events:none;overflow:visible;display:block}
+  .wmbar{position:absolute;left:0;right:0;bottom:0;z-index:1;pointer-events:none}
+  #wm{display:block;overflow:visible;pointer-events:none}
 
   /* glass droplet cursor + ripples */
   #drop{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;pointer-events:none;z-index:50;
@@ -208,12 +209,21 @@
     .ico .tip{bottom:50px}
     .ico:first-child .tip{left:0;transform:none}
     .ico:last-child .tip{left:auto;right:0;transform:none}
-    #wm{position:relative;margin:18px -18px 0}
+    /* the name stays pinned at the bottom in its own glass bar; the controls scroll behind it */
+    .wmbar{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:30;border-radius:24px;padding:8px 6px 4px;
+      background:linear-gradient(180deg,rgba(255,250,244,.30),rgba(255,250,244,.14));
+      -webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 0 1px rgba(255,255,255,.3), 0 14px 30px -12px rgba(40,25,10,.45)}
+    html.dark .wmbar{background:linear-gradient(180deg,rgba(40,32,26,.45),rgba(20,16,13,.35));box-shadow:inset 0 1px 0 rgba(255,230,200,.25), inset 0 0 0 1px rgba(255,230,200,.08), 0 14px 30px -12px rgba(0,0,0,.6)}
+    .slab{margin-bottom:calc(var(--wmH,90px) + 26px + env(safe-area-inset-bottom))}
+    body:not(.ready) .wmbar{opacity:0;transform:translateY(30px)}
+    .wmbar{transition:opacity .7s ease .3s, transform .7s ease .3s}
+    .inner{padding-bottom:22px}
     .ripple{width:280px;height:280px;margin:-140px 0 0 -140px}
   }
   /* phone held sideways: two columns, settings in a 2×2 grid */
   @media (max-height:560px) and (min-width:761px){
-    #wm{margin-left:-18px}
+    .wmbar{left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right))}
     .slab{margin-top:22vh;margin-left:max(14px,env(safe-area-inset-left));margin-right:max(14px,env(safe-area-inset-right))}
     .top{grid-template-columns:minmax(260px,320px) 1fr;gap:24px}
     .panel{grid-template-columns:1fr 1fr}
@@ -275,7 +285,7 @@
       </div>
     </div>
 
-    <svg id="wm" class="reveal d4" aria-hidden="true"></svg>
+    <div class="wmbar reveal d4" id="wmbar"><svg id="wm" aria-hidden="true"></svg></div>
   </div>
 </section>
 
@@ -1098,6 +1108,15 @@ $('orb').addEventListener('click',()=>flash('Evening', document.documentElement.
    Same optics as the liquid-glass skill (displacement map + three staggered passes for a
    prism fringe, sRGB filter), but the map is built from the letter shapes so it works on
    text and on every browser, iPhone included. */
+/* phones: the name bar lives outside the slab so it can stay pinned to the screen */
+const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
+function homeWordmark(){
+  const bar=$('wmbar'), inner=document.querySelector('#slab .inner');
+  if(compactMQ.matches){ if(bar.parentNode!==document.body) document.body.appendChild(bar); }
+  else if(bar.parentNode!==inner) inner.appendChild(bar);
+}
+homeWordmark();
+compactMQ.addEventListener?.('change',()=>{ homeWordmark(); dispatchEvent(new Event('resize')); });
 (function(){
   const NS='http://www.w3.org/2000/svg', svg=$('wm'), TEXT='Pocket Reverb';
   const FONT='800 100px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
@@ -1133,11 +1152,13 @@ $('orb').addEventListener('click',()=>flash('Evening', document.documentElement.
   }
 
   function build(){
-    const slab=$('slab'); W=slab.clientWidth; if(!W) return;
-    let fs=Math.min(W*0.165, innerHeight*0.23);
+    const bar=$('wmbar'), cs=getComputedStyle(bar); W=bar.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight); if(!W) return;
+    const pinned=getComputedStyle(bar).position==='fixed';
+    let fs=pinned?Math.min(W*0.165, 64, innerHeight*0.14):Math.min(W*0.165, innerHeight*0.23);
     { const c=document.createElement('canvas').getContext('2d'); c.font=FONT.replace('100px',fs+'px');
       const tw=c.measureText(TEXT).width - 0.06*fs*(TEXT.length-1); const fit=W*0.92; if(tw>fit) fs*=fit/tw; }
     H=Math.round(fs*0.84);
+    document.documentElement.style.setProperty('--wmH',(H+16)+'px');
     svg.setAttribute('width',W); svg.setAttribute('height',H); svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
     svg.innerHTML='';
     const defs=mk('defs',{},svg), bx=W/2, by=H-fs*0.07;
