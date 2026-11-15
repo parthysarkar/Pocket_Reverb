@@ -44,6 +44,9 @@
 
   .inner{position:relative;height:100%;padding:clamp(18px,3.6vh,34px) 40px 0;display:flex;flex-direction:column}
   .top,.bottom{position:relative;z-index:2}
+  .content{display:flex;flex-direction:column;position:relative;z-index:2}
+  #spacer{display:none}
+  .clip{display:contents}
   .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s ease, transform .7s ease}
   body.ready .reveal{opacity:1;transform:none}
   body.ready .d1{transition-delay:.05s} body.ready .d2{transition-delay:.15s} body.ready .d3{transition-delay:.25s} body.ready .d4{transition-delay:.35s}
@@ -182,13 +185,19 @@
     .panel{padding:16px 22px 12px} .col h4{margin-bottom:7px} .ctl{margin-bottom:7px} .tab{padding:5px 10px}
     .bottom{margin-top:14px}
   }
-  /* ===== phones & small windows: the glass slab becomes a scrolling sheet ===== */
+  /* ===== phones & small windows: one glass panel that slides up, locks, then the controls scroll inside it ===== */
   @media (max-width:760px), (max-height:560px){
     html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
-    body{-webkit-overflow-scrolling:touch}
-    .slab{position:relative;left:auto;right:auto;top:auto;bottom:auto;margin:34vh 12px calc(14px + env(safe-area-inset-bottom));
-      border-radius:28px;min-height:60vh}
-    .inner{height:auto;padding:22px 18px 0}
+    #spacer{display:block}
+    .slab{position:fixed;left:10px;right:10px;top:34vh;bottom:calc(8px + env(safe-area-inset-bottom));border-radius:28px}
+    .inner{height:100%;overflow:hidden;padding:0}
+    .content{padding:22px 18px 22px;will-change:transform;
+      -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 18px,#000 calc(100% - 0px));
+      mask-image:linear-gradient(180deg,transparent 0,#000 18px,#000 100%)}
+    .clip{display:block;position:absolute;left:0;right:0;top:0;bottom:var(--wmH,80px);overflow:hidden;
+      -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 16px,#000 calc(100% - 26px),transparent 100%);
+      mask-image:linear-gradient(180deg,transparent 0,#000 16px,#000 calc(100% - 26px),transparent 100%)}
+    .content{-webkit-mask-image:none;mask-image:none}
     .top{grid-template-columns:1fr;gap:20px}
     .status{font-size:30px;margin-top:18px;height:auto;min-height:1.15em}
     .hint{height:auto;min-height:18px}
@@ -202,29 +211,18 @@
     .bottom{flex-direction:column;align-items:stretch;gap:14px;margin-top:22px}
     .bottom .l{justify-content:space-between}
     .bottom .r{justify-content:space-between;flex-wrap:wrap;gap:12px}
-    .icons{flex:1 1 100%;justify-content:space-between}
+    .icons{flex:1 1 100%;justify-content:space-between;gap:6px;padding:5px 6px}
     .evening{flex:1 1 100%;justify-content:space-between}
-    .icons{gap:6px;padding:5px 6px}
     .ico{flex:1;width:auto;height:40px}
     .ico .tip{bottom:50px}
     .ico:first-child .tip{left:0;transform:none}
     .ico:last-child .tip{left:auto;right:0;transform:none}
-    /* the name stays pinned at the bottom in its own glass bar; the controls scroll behind it */
-    .wmbar{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:30;border-radius:24px;padding:8px 6px 4px;
-      background:linear-gradient(180deg,rgba(255,250,244,.30),rgba(255,250,244,.14));
-      -webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 0 1px rgba(255,255,255,.3), 0 14px 30px -12px rgba(40,25,10,.45)}
-    html.dark .wmbar{background:linear-gradient(180deg,rgba(40,32,26,.45),rgba(20,16,13,.35));box-shadow:inset 0 1px 0 rgba(255,230,200,.25), inset 0 0 0 1px rgba(255,230,200,.08), 0 14px 30px -12px rgba(0,0,0,.6)}
-    .slab{margin-bottom:calc(var(--wmH,90px) + 26px + env(safe-area-inset-bottom))}
-    body:not(.ready) .wmbar{opacity:0;transform:translateY(30px)}
-    .wmbar{transition:opacity .7s ease .3s, transform .7s ease .3s}
-    .inner{padding-bottom:22px}
+    .wmbar{position:absolute;left:0;right:0;bottom:0;padding:0 6px 6px;z-index:3}
     .ripple{width:280px;height:280px;margin:-140px 0 0 -140px}
   }
   /* phone held sideways: two columns, settings in a 2×2 grid */
   @media (max-height:560px) and (min-width:761px){
-    .wmbar{left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right))}
-    .slab{margin-top:22vh;margin-left:max(14px,env(safe-area-inset-left));margin-right:max(14px,env(safe-area-inset-right))}
+    .slab{left:max(14px,env(safe-area-inset-left));right:max(14px,env(safe-area-inset-right))}
     .top{grid-template-columns:minmax(260px,320px) 1fr;gap:24px}
     .panel{grid-template-columns:1fr 1fr}
     .bottom{flex-direction:row;align-items:center}
@@ -239,6 +237,7 @@
 
 <section class="slab" id="slab">
   <div class="inner">
+    <div class="clip" id="clip"><div class="content" id="content">
     <div class="top">
       <div class="left">
         <button class="brand reveal d1" id="brand" title="Replay the intro">
@@ -285,9 +284,11 @@
       </div>
     </div>
 
+    </div></div>
     <div class="wmbar reveal d4" id="wmbar"><svg id="wm" aria-hidden="true"></svg></div>
   </div>
 </section>
+<div id="spacer" aria-hidden="true"></div>
 
 <script>
 
@@ -1108,15 +1109,7 @@ $('orb').addEventListener('click',()=>flash('Evening', document.documentElement.
    Same optics as the liquid-glass skill (displacement map + three staggered passes for a
    prism fringe, sRGB filter), but the map is built from the letter shapes so it works on
    text and on every browser, iPhone included. */
-/* phones: the name bar lives outside the slab so it can stay pinned to the screen */
 const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
-function homeWordmark(){
-  const bar=$('wmbar'), inner=document.querySelector('#slab .inner');
-  if(compactMQ.matches){ if(bar.parentNode!==document.body) document.body.appendChild(bar); }
-  else if(bar.parentNode!==inner) inner.appendChild(bar);
-}
-homeWordmark();
-compactMQ.addEventListener?.('change',()=>{ homeWordmark(); dispatchEvent(new Event('resize')); });
 (function(){
   const NS='http://www.w3.org/2000/svg', svg=$('wm'), TEXT='Pocket Reverb';
   const FONT='800 100px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
@@ -1153,7 +1146,7 @@ compactMQ.addEventListener?.('change',()=>{ homeWordmark(); dispatchEvent(new Ev
 
   function build(){
     const bar=$('wmbar'), cs=getComputedStyle(bar); W=bar.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight); if(!W) return;
-    const pinned=getComputedStyle(bar).position==='fixed';
+    const pinned=compactMQ.matches;
     let fs=pinned?Math.min(W*0.165, 64, innerHeight*0.14):Math.min(W*0.165, innerHeight*0.23);
     { const c=document.createElement('canvas').getContext('2d'); c.font=FONT.replace('100px',fs+'px');
       const tw=c.measureText(TEXT).width - 0.06*fs*(TEXT.length-1); const fit=W*0.92; if(tw>fit) fs*=fit/tw; }
@@ -1293,6 +1286,33 @@ document.querySelectorAll('.ico').forEach(ico=>{
     ico.addEventListener('click',e=>{ if(!armed){ e.preventDefault(); armed=true; show('Code on GitHub · tap again to open'); setTimeout(()=>armed=false,3000);} });
   }
 });
+
+/* ---------- phones: the glass slides up, locks near the top, then only the controls move inside it ---------- */
+(function(){
+  const content=$('content'), spacer=$('spacer'), slabEl=$('slab');
+  let S0=0, LOCK=12, D=0, maxScroll=0;
+  function measure(){
+    if(!compactMQ.matches){ slabEl.style.top=''; content.style.transform=''; spacer.style.height=''; return; }
+    S0=Math.round(innerHeight*(innerHeight<560&&innerWidth>innerHeight?0.22:0.34));
+    LOCK=12; D=S0-LOCK;
+    const wmH=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--wmH'))||80;
+    const bottomGap=8, viewH=innerHeight-LOCK-bottomGap-wmH;          // room for controls once locked
+    maxScroll=Math.max(0, content.scrollHeight-viewH+12);
+    spacer.style.height=(innerHeight+D+maxScroll)+'px';
+    apply();
+  }
+  function apply(){
+    if(!compactMQ.matches) return;
+    const y=Math.max(0,scrollY);
+    slabEl.style.top=(S0-Math.min(y,D))+'px';
+    content.style.transform=`translateY(${-Math.min(maxScroll,Math.max(0,y-D))}px)`;
+  }
+  addEventListener('scroll',apply,{passive:true});
+  addEventListener('resize',()=>setTimeout(measure,60));
+  compactMQ.addEventListener?.('change',()=>setTimeout(measure,60));
+  new ResizeObserver(()=>measure()).observe(content);
+  setTimeout(measure,200); addEventListener('load',()=>setTimeout(measure,300));
+})();
 
 </script>
 </body>
