@@ -97,7 +97,7 @@
   .cats button{border:0;background:transparent;color:var(--sub);font:500 13px/1 inherit;font-family:inherit;padding:8px 13px;border-radius:999px}
   .cats button.on{color:var(--ink);background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1px rgba(255,255,255,.8)}
   html.dark .cats button.on{background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,235,210,.16)}
-  .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px 10px;flex:1 1 auto;min-height:0;overflow:auto;padding:4px 2px 6px;
+  .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px 10px;flex:1 1 auto;min-height:0;overflow:auto;padding:4px 2px 6px;
     -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 22px),transparent)}
   .chord{border:0;background:transparent;color:var(--ink);font-family:inherit;padding:6px 4px 10px;border-radius:20px;display:flex;flex-direction:column;align-items:center;transition:background .2s, transform .15s}
   .chord:hover{background:rgba(255,255,255,.3)} html.dark .chord:hover{background:rgba(255,255,255,.06)}
@@ -105,9 +105,18 @@
   .chord.play{background:rgba(255,255,255,.45)} html.dark .chord.play{background:rgba(255,255,255,.12)}
   .chord .nm{font-size:30px;font-weight:500;letter-spacing:-.02em;color:var(--sub);line-height:1;margin:4px 0 2px}
   .chord.play .nm{color:var(--ink)}
-  .chord svg{width:96px;height:auto;overflow:visible}
+  .chord svg{width:104px;height:auto;overflow:visible}
   .cd-line{stroke:var(--ink);stroke-opacity:.42} .cd-nut{stroke:var(--ink);stroke-opacity:.8}
-  .cd-dot{fill:var(--ink)} .cd-open{fill:none;stroke:var(--ink);stroke-opacity:.6} .cd-x{stroke:var(--ink);stroke-opacity:.55}
+  .cd-open{fill:none;stroke:var(--ink);stroke-opacity:.6} .cd-x{stroke:var(--ink);stroke-opacity:.55}
+  .cd-num{fill:var(--sub);font-size:10.5px;font-weight:600}
+  .cd-fn{font-size:8.5px;font-weight:700;pointer-events:none}
+  .handbox{display:flex;align-items:center;gap:14px;margin-top:14px}
+  .hand{width:118px;flex:none}
+  .hand-palm{fill:rgba(255,255,255,.45);stroke:rgba(0,0,0,.12)} html.dark .hand-palm{fill:rgba(255,255,255,.12);stroke:rgba(255,235,210,.15)}
+  .hand-thumb{stroke:rgba(0,0,0,.15)}
+  .hl{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--ink)}
+  .hl span{display:flex;align-items:center;gap:7px}
+  .hl i{width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.18);flex:none}
   .cd-fr{fill:var(--sub);font-size:11px;font-weight:600}
   .cd-bar{fill:var(--ink)}
   html.dark .cd-dot,html.dark .cd-bar{fill:#fff}
@@ -121,14 +130,20 @@
   .str.ok small{color:#4a4d00}
   html.dark .str{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.12)} html.dark .str.hit{background:rgba(255,255,255,.18)}
   .panel.tpanel{display:flex;flex-direction:column;align-items:center;padding:16px 22px 18px}
-  .gauge{width:min(100%,380px,calc((100vh - 520px) * 1.68));min-width:200px;height:auto}
-  .g-tick{stroke:var(--ink);stroke-opacity:.35} .g-tick.major{stroke-opacity:.7}
-  .g-lab{fill:var(--sub);font-size:11px;font-weight:500}
-  .g-zone{fill:none;stroke:#ebf701;stroke-width:10;stroke-linecap:round;opacity:.35;transition:opacity .25s}
-  .gauge.ok .g-zone{opacity:1;filter:drop-shadow(0 0 6px rgba(235,247,1,.8))}
-  .g-needle{stroke:var(--ink);stroke-width:3;stroke-linecap:round;transition:transform .14s ease-out;transform-origin:160px 170px}
-  .g-hub{fill:var(--ink)}
-  .gauge.ok .g-needle{stroke:#9aa300} html.dark .gauge.ok .g-needle{stroke:#ebf701}
+  .gauge{width:min(100%,420px,calc((100vh - 470px) * 1.56));min-width:220px;height:auto;overflow:visible}
+  .t-zone{fill:rgba(52,199,89,.10);stroke:rgba(52,199,89,.35);stroke-width:1;transition:fill .25s,stroke .25s}
+  .t-zoneglow{fill:#34c759;opacity:0;transition:opacity .3s}
+  .gauge.ok .t-zone{fill:rgba(52,199,89,.32);stroke:#34c759}
+  .gauge.ok .t-zoneglow{opacity:.45}
+  .t-string{fill:none;stroke-width:3;stroke-linecap:round;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+  .gauge.ok .t-string{stroke:#34c759}
+  .t-axis{stroke:var(--ink);stroke-opacity:.35;stroke-width:1.5}
+  .t-tick{stroke:var(--ink);stroke-opacity:.35;stroke-width:1.2} .t-tick.major{stroke-opacity:.7;stroke-width:1.8}
+  .t-lab{fill:var(--sub);font-size:11px;font-weight:500}
+  .t-side{fill:var(--sub);font-size:11.5px;font-weight:600}
+  .t-mark{fill:var(--ink);transition:fill .25s;opacity:.35}
+  .gauge.live .t-mark{opacity:1}
+  .gauge.ok .t-mark{fill:#34c759}
   .tread{margin-top:-6px;display:flex;align-items:flex-start;gap:2px}
   .tnote{font-size:clamp(44px,7vh,72px);font-weight:700;letter-spacing:-.04em;line-height:1}
   .toct{font-size:20px;font-weight:600;color:var(--sub);margin-top:8px}
@@ -285,10 +300,12 @@
     .cgrid{overflow:visible}
     .head{flex-direction:column;align-items:stretch;gap:14px}
     .seg button{flex:1;padding:12px 0}
-    .cwrap,.twrap{grid-template-columns:1fr;gap:20px;margin-top:14px}
-    .gauge{width:min(100%,360px)}
+    .cwrap,.twrap{grid-template-columns:minmax(0,1fr);gap:20px;margin-top:14px}
+    .cleft,.tleft{min-width:0}
+    .hand{width:96px}
+    .gauge{width:100%}
     .cgrid{max-height:none;overflow:visible;-webkit-mask-image:none;mask-image:none;grid-template-columns:repeat(3,1fr)}
-    .chord svg{width:88px}
+    .chord svg{width:96px}
     .str{height:60px}
     .status{font-size:30px;margin-top:18px;height:auto;min-height:1.15em}
     .hint{height:auto;min-height:18px}
@@ -394,7 +411,7 @@
           <div class="strings" id="tStrings"></div>
         </div>
         <div class="panel tpanel">
-          <svg class="gauge" id="gauge" viewBox="0 0 320 190" aria-hidden="true"></svg>
+          <svg class="gauge" id="gauge" viewBox="0 0 360 230" aria-hidden="true"></svg>
           <div class="tread"><span class="tnote" id="tNote">–</span><span class="toct" id="tOct"></span></div>
           <div class="tcents" id="tCents">Pluck a string</div>
           <div class="thz" id="tHz">&nbsp;</div>
@@ -1517,6 +1534,17 @@ const CHORDS={
   'Dsus2':'xx0230','Dsus4':'xx0233','Asus2':'x02200','Asus4':'x02230','Esus4':'022200','Cadd9':'x32033',
   'E5':'022xxx','A5':'x022xx','D5':'xx023x','G5':'355xxx','C5':'x355xx','F5':'133xxx',
 };
+const FINGERS={
+  'C':'032010','D':'000132','E':'023100','F':'134211','G':'210003','A':'001230','B':'012341',
+  'Cm':'013421','Dm':'000231','Em':'023000','Fm':'134111','Gm':'134111','Am':'002310','Bm':'013421',
+  'C7':'032410','D7':'000213','E7':'020100','F7':'131211','G7':'320001','A7':'001020','B7':'021304',
+  'Cmaj7':'032000','Dmaj7':'000123','Emaj7':'031200','Fmaj7':'003210','Gmaj7':'210003','Amaj7':'002130',
+  'Dm7':'000211','Em7':'020000','Am7':'002010','Bm7':'020304',
+  'Dsus2':'000130','Dsus4':'000134','Asus2':'002300','Asus4':'001230','Esus4':'023400','Cadd9':'021034',
+  'E5':'013000','A5':'001300','D5':'000130','G5':'134000','C5':'013400','F5':'134000',
+};
+const FCOL=['#ffffff','#ff4d4d','#f5d90a','#3d8bff','#34c759'];   // thumb, index, middle, ring, pinky
+const FTXT=['#333','#fff','#3a3200','#fff','#fff'];
 const CATS={
   'Major':['C','D','E','F','G','A','B'],
   'Minor':['Am','Bm','Cm','Dm','Em','Fm','Gm'],
@@ -1532,27 +1560,32 @@ const PROGS=[
 const parse=s=>[...s].map(c=>c==='x'?-1:parseInt(c,10));
 const NS2='http://www.w3.org/2000/svg';
 function diagram(name){
-  const f=parse(CHORDS[name]), played=f.filter(v=>v>0);
+  const f=parse(CHORDS[name]), fg=[...FINGERS[name]].map(Number), played=f.filter(v=>v>0);
   const minF=played.length?Math.min(...played):1, maxF=played.length?Math.max(...played):1;
   const base=maxF<=4?1:minF;                      // first fret shown
-  const W=96,H=120,x0=12,x1=84,y0=26,rows=4,rh=(H-y0-6)/rows, sx=i=>x0+(x1-x0)*i/5;
+  const W=104,H=122,x0=26,x1=92,y0=26,rows=4,rh=(H-y0-6)/rows, sx=i=>x0+(x1-x0)*i/5;
   let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="${NS2}">`;
-  // arch-topped neck outline like the reference
+  for(let r=0;r<rows;r++) o+=`<text class="cd-num" text-anchor="end" x="${x0-8}" y="${y0+(r+.5)*rh+4}">${base+r}</text>`;
   o+=`<path class="cd-line" fill="none" stroke-width="1.2" d="M${x0} ${H-4} V${y0+10} Q${x0} ${y0} ${x0+12} ${y0} H${x1-12} Q${x1} ${y0} ${x1} ${y0+10} V${H-4}"/>`;
   for(let i=1;i<5;i++) o+=`<line class="cd-line" stroke-width="1" x1="${sx(i)}" y1="${y0}" x2="${sx(i)}" y2="${H-4}"/>`;
   for(let r=1;r<=rows;r++) o+=`<line class="cd-line" stroke-width="1" x1="${x0}" y1="${y0+r*rh}" x2="${x1}" y2="${y0+r*rh}"/>`;
   if(base===1) o+=`<line class="cd-nut" stroke-width="2.4" stroke-linecap="round" x1="${x0+8}" y1="${y0+.5}" x2="${x1-8}" y2="${y0+.5}"/>`;
-  else o+=`<text class="cd-fr" x="${x1+5}" y="${y0+rh*.5+4}">${base}fr</text>`;
-  // barre: same fret on several strings from the lowest played string
-  const bf=played.length?Math.min(...played):0, bIdx=f.map((v,i)=>v===bf?i:-1).filter(i=>i>=0);
-  const isBarre=bf>0 && bIdx.length>=3 && f.every((v,i)=>v<0||i<bIdx[0]||v>=bf) && name.length>0 && (bIdx[bIdx.length-1]-bIdx[0])>=3;
-  if(isBarre){ const yb=y0+(bf-base+.5)*rh; o+=`<rect class="cd-bar" x="${sx(bIdx[0])-5}" y="${yb-5}" width="${sx(bIdx[bIdx.length-1])-sx(bIdx[0])+10}" height="10" rx="5"/>`; }
+  const bars=[];
+  for(let fi=1;fi<=4;fi++){
+    const idx=f.map((v,i)=>(fg[i]===fi && v>0)?i:-1).filter(i=>i>=0);
+    if(idx.length>=2 && idx.every(i=>f[i]===f[idx[0]])) bars.push({fi,fret:f[idx[0]],a:idx[0],b:idx[idx.length-1]});
+  }
+  bars.forEach(br=>{ const yb=y0+(br.fret-base+.5)*rh;
+    o+=`<rect x="${sx(br.a)-6.5}" y="${yb-6.5}" width="${sx(br.b)-sx(br.a)+13}" height="13" rx="6.5" fill="${FCOL[br.fi]}" stroke="rgba(0,0,0,.18)"/>`;
+    o+=`<text class="cd-fn" text-anchor="middle" x="${sx(br.a)}" y="${yb+3.2}" fill="${FTXT[br.fi]}">${br.fi}</text>`; });
   f.forEach((v,i)=>{
     const x=sx(i);
     if(v<0){ o+=`<path class="cd-x" stroke-width="1.4" stroke-linecap="round" d="M${x-3.5} ${y0-14.5} l7 7 M${x+3.5} ${y0-14.5} l-7 7"/>`; return; }
     if(v===0){ o+=`<circle class="cd-open" stroke-width="1.3" cx="${x}" cy="${y0-11}" r="3.6"/>`; return; }
-    if(isBarre && v===bf) return;
-    o+=`<circle class="cd-dot" cx="${x}" cy="${y0+(v-base+.5)*rh}" r="5.6"/>`;
+    const fi=fg[i]||1;
+    if(bars.some(br=>br.fi===fi && br.fret===v && i>=br.a && i<=br.b)) return;
+    const y=y0+(v-base+.5)*rh;
+    o+=`<circle cx="${x}" cy="${y}" r="6.6" fill="${FCOL[fi]}" stroke="rgba(0,0,0,.18)"/><text class="cd-fn" text-anchor="middle" x="${x}" y="${y+3.2}" fill="${FTXT[fi]}">${fi}</text>`;
   });
   return o+'</svg>';
 }
@@ -1615,6 +1648,18 @@ $('progPlay').addEventListener('click',()=>{
   step();
 });
 renderCats(); renderGrid();
+(function(){
+  const fingers=[{n:'Index',c:FCOL[1],x:46,h:58},{n:'Middle',c:FCOL[2],x:66,h:64},{n:'Ring',c:FCOL[3],x:86,h:60},{n:'Pinky',c:FCOL[4],x:104,h:48}];
+  let o='<svg viewBox="0 0 150 130" class="hand" aria-hidden="true">';
+  o+='<rect x="36" y="64" width="82" height="58" rx="26" class="hand-palm"/>';
+  o+='<rect x="8" y="78" width="18" height="46" rx="9" transform="rotate(-38 17 101)" fill="#fff" class="hand-thumb"/>';
+  fingers.forEach((f,i)=>{ o+=`<rect x="${f.x-8}" y="${74-f.h}" width="16" height="${f.h+8}" rx="8" fill="${f.c}" stroke="rgba(0,0,0,.15)"/>`;
+    o+=`<text class="cd-fn" text-anchor="middle" x="${f.x}" y="${74-f.h+14}" fill="${FTXT[i+1]}">${i+1}</text>`; });
+  o+='</svg>';
+  const leg=document.createElement('div'); leg.className='handbox';
+  leg.innerHTML=o+'<div class="hl">'+fingers.map((f,i)=>`<span><i style="background:${f.c}"></i>${i+1} ${f.n}</span>`).join('')+'<span><i style="background:#fff"></i>Thumb · stays behind the neck</span></div>';
+  document.querySelector('#view-chords .hint2').after(leg);
+})();
 
 /* ---------- tuner ---------- */
 const NOTE_NAMES=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
@@ -1625,20 +1670,42 @@ STRINGS.forEach((s,i)=>{
   b.onclick=()=>{ const c=pluckCtx(); if(c.state==='suspended') c.resume(); pluck(s.m,null,3.2,.24); };
   $('tStrings').appendChild(b);
 });
-// gauge: ±50 cents across ±60°
+// display: a single string that vibrates while you play, over a left/right meter
+//   left = too high (loosen), right = too low (tighten), centre = in tune (green, string settles)
+const TUNE={cents:0, target:0, amp:0, ampT:0, ok:false, live:false, phase:0};
 (function(){
-  const g=$('gauge'), cx=160, cy=170, R=140, ang=c=>(-90+c*1.2)*Math.PI/180;
-  let o='';
-  for(let c=-50;c<=50;c+=5){ const a=ang(c), major=c%25===0, r1=R-(major?18:10);
-    o+=`<line class="g-tick${major?' major':''}" stroke-width="${major?2:1.2}" x1="${cx+Math.cos(a)*r1}" y1="${cy+Math.sin(a)*r1}" x2="${cx+Math.cos(a)*R}" y2="${cy+Math.sin(a)*R}"/>`;
-    if(major) o+=`<text class="g-lab" text-anchor="middle" x="${cx+Math.cos(a)*(R-32)}" y="${cy+Math.sin(a)*(R-32)+4}">${c>0?'+'+c:c}</text>`; }
-  const a0=ang(-5), a1=ang(5);
-  o+=`<path class="g-zone" d="M${cx+Math.cos(a0)*(R+12)} ${cy+Math.sin(a0)*(R+12)} A${R+12} ${R+12} 0 0 1 ${cx+Math.cos(a1)*(R+12)} ${cy+Math.sin(a1)*(R+12)}"/>`;
-  o+=`<line class="g-needle" id="needle" x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-R+6}"/><circle class="g-hub" cx="${cx}" cy="${cy}" r="6"/>`;
-  g.innerHTML=o;
+  const g=$('gauge'), W=360, H=230, cx=W/2, my=196, px=c=>cx-c*3;   // ±50 cents → ±150 px
+  let o=`<defs><linearGradient id="strG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8d8a85"/><stop offset=".5" stop-color="#f4f1ec"/><stop offset="1" stop-color="#8d8a85"/></linearGradient>
+    <filter id="okGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter></defs>`;
+  o+=`<rect class="t-zone" id="tZone" x="${px(5)}" y="8" width="${px(-5)-px(5)}" height="${my-2}" rx="${(px(-5)-px(5))/2}"/>`;
+  o+=`<rect class="t-zoneglow" id="tZoneGlow" x="${px(5)}" y="8" width="${px(-5)-px(5)}" height="${my-2}" rx="15" filter="url(#okGlow)"/>`;
+  o+=`<path id="tString" class="t-string" d="M${cx} 6 L${cx} ${my-14}" stroke="url(#strG)"/>`;
+  o+=`<line class="t-axis" x1="${px(50)}" y1="${my}" x2="${px(-50)}" y2="${my}"/>`;
+  for(let c=-50;c<=50;c+=5){ const major=c%25===0;
+    o+=`<line class="t-tick${major?' major':''}" x1="${px(c)}" y1="${my-(major?9:5)}" x2="${px(c)}" y2="${my+(major?9:5)}"/>`;
+    if(major && c!==0) o+=`<text class="t-lab" text-anchor="middle" x="${px(c)}" y="${my+24}">${Math.abs(c)}</text>`; }
+  o+=`<text class="t-side" text-anchor="start" x="${px(50)}" y="${my-16}">◀ too high</text>`;
+  o+=`<text class="t-side" text-anchor="end" x="${px(-50)}" y="${my-16}">too low ▶</text>`;
+  o+=`<g id="tMark" class="t-mark"><path d="M0 -14 L8 -26 H-8 Z"/><rect x="-2" y="-12" width="4" height="22" rx="2"/></g>`;
+  g.setAttribute('viewBox',`0 0 ${W} ${H}`); g.innerHTML=o;
+  const str=$('tString'), mark=$('tMark');
+  function frame(){
+    TUNE.cents += (TUNE.target-TUNE.cents)*0.25;
+    TUNE.amp += (TUNE.ampT-TUNE.amp)*0.12;
+    TUNE.phase += 0.9;
+    const a=TUNE.amp*Math.sin(TUNE.phase), b=TUNE.amp*0.35*Math.sin(TUNE.phase*2.3);
+    // a plucked string bows out most in the middle
+    str.setAttribute('d',`M${cx} 6 Q${cx+a*2} ${(my-14)*0.35} ${cx+a+b} ${(my-14)*0.5} T${cx} ${my-14}`);
+    mark.setAttribute('transform',`translate(${px(Math.max(-50,Math.min(50,TUNE.cents)))} ${my})`);
+    requestAnimationFrame(frame);
+  }
+  mark.setAttribute('transform',`translate(${cx} ${my})`); requestAnimationFrame(frame);
 })();
-function setNeedle(c){ $('needle').style.transform=`rotate(${Math.max(-50,Math.min(50,c))*1.2}deg)`; }
-
+function setTuneDisplay(cents,ok,live){
+  TUNE.target=cents; TUNE.ok=ok; TUNE.live=live;
+  TUNE.ampT = !live ? 0 : ok ? 0.6 : Math.min(9, 2.5+Math.abs(cents)*0.18);
+  $('gauge').classList.toggle('ok',ok); $('gauge').classList.toggle('live',live);
+}
 // pitch detection: normalised autocorrelation with parabolic refinement (works well for guitar 70–1100 Hz)
 function detectPitch(buf,sr){
   const n=buf.length; let rms=0; for(let i=0;i<n;i++) rms+=buf[i]*buf[i]; rms=Math.sqrt(rms/n);
@@ -1679,22 +1746,23 @@ async function tunerStart(){
     if(now-last<45) return; last=now;
     tan.getFloatTimeDomainData(tbuf);
     const f=detectPitch(tbuf,tctx.sampleRate);
-    if(f<0){ return; }
+    if(f<0){ if(now-(window.__lastHit||0)>700) setTuneDisplay(TUNE.target,false,false); return; }
+    window.__lastHit=now;
     smooth = smooth&&Math.abs(Math.log2(f/smooth))<0.03 ? smooth*0.7+f*0.3 : f;
     const midi=69+12*Math.log2(smooth/440), near=Math.round(midi), cents=(midi-near)*100;
     $('tNote').textContent=NOTE_NAMES[(near%12+12)%12]; $('tOct').textContent=Math.floor(near/12)-1;
     $('tHz').textContent=smooth.toFixed(1)+' Hz';
-    setNeedle(cents);
     // nearest guitar string
     let si=0, bd=1e9; STRINGS.forEach((s,i)=>{ const d=Math.abs(midi-s.m); if(d<bd){bd=d;si=i;} });
-    const ok=Math.abs(cents)<5 && bd<0.6;
-    $('gauge').classList.toggle('ok',ok);
+    const tc=(midi-STRINGS[si].m)*100;            // cents away from the string you're tuning
+    const ok=Math.abs(tc)<5;
+    setTuneDisplay(Math.max(-50,Math.min(50,tc)),ok,true);
     document.querySelectorAll('.str').forEach((b,i)=>{ b.classList.toggle('hit',i===si && !ok); b.classList.toggle('ok',i===si && ok); });
     const target=STRINGS[si];
     let msg;
-    if(bd>=0.6) msg=midi<target.m?`Too low for ${target.n} · tighten`:`Too high for ${target.n} · loosen`;
-    else if(ok) msg='In tune ✓';
-    else msg=cents<0?`${Math.abs(cents).toFixed(0)} cents flat · tighten`:`${cents.toFixed(0)} cents sharp · loosen`;
+    if(ok) msg=`${target.n} string in tune ✓`;
+    else if(Math.abs(tc)>50) msg=tc<0?`Way too low for ${target.n} · tighten`:`Way too high for ${target.n} · loosen`;
+    else msg=tc<0?`${Math.abs(tc).toFixed(0)} cents too low · tighten`:`${tc.toFixed(0)} cents too high · loosen`;
     $('tCents').textContent=msg;
   };
   traf=requestAnimationFrame(loop);
@@ -1704,7 +1772,7 @@ function tunerStop(){
   if(tstream) tstream.getTracks().forEach(t=>t.stop()); if(tctx) tctx.close();
   tctx=null; tstream=null; tan=null; smooth=null;
   $('tBtn').textContent='Start tuner'; $('tBtn').classList.remove('on');
-  $('gauge').classList.remove('ok'); setNeedle(0);
+  setTuneDisplay(0,false,false);
   document.querySelectorAll('.str').forEach(b=>b.classList.remove('hit','ok'));
   fadeText($('tStatus'),'Tuner'); fadeText($('tHint'),'Tap Start tuner, then pluck one string at a time and let it ring.');
   $('tNote').textContent='–'; $('tOct').textContent=''; $('tCents').textContent='Pluck a string'; $('tHz').innerHTML='&nbsp;';
