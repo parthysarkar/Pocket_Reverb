@@ -56,8 +56,8 @@
   .brand{gap:12px}
   .by{font-weight:400;color:var(--sub)} .by b{font-weight:600;color:var(--ink)}
   .pick{position:relative;width:38px;height:38px;display:grid;place-items:center;flex:none}
-  .pick svg{position:relative;z-index:1;filter:drop-shadow(0 3px 4px rgba(90,95,0,.4))}
-  .pick i{position:absolute;left:50%;top:54%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;
+  .pick svg{position:relative;z-index:1;transform:translateY(3px);filter:drop-shadow(0 3px 4px rgba(90,95,0,.4))}
+  .pick i{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;
     border:1.5px solid rgba(160,170,0,.7);box-shadow:0 0 6px rgba(235,247,1,.35), inset 0 0 4px rgba(255,255,255,.45);
     transform:scale(.3);opacity:0;animation:pickRip 3.6s cubic-bezier(.15,.6,.35,1) infinite}
   .pick i:nth-child(2){animation-delay:1.2s} .pick i:nth-child(3){animation-delay:2.4s}
@@ -82,9 +82,11 @@
 
   /* Learn noise — dark glass pill, moving light ring (canvas) */
   .pill{position:relative;border:0;cursor:pointer;font-family:inherit}
-  .pill.ai{margin-top:14px;width:100%;height:52px;border-radius:999px;color:#fff;font:600 15px/1 inherit;font-family:inherit;
-    background:radial-gradient(120% 150% at 30% 0,rgba(70,66,62,.7),rgba(14,12,10,.94));
-    box-shadow:0 14px 26px -12px rgba(30,20,10,.55), 0 0 0 5px rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
+  .pill.ai{margin-top:14px;width:100%;height:52px;border-radius:999px;color:#fff;font:600 15px/1 inherit;font-family:inherit;background:transparent;
+    box-shadow:0 16px 28px -14px rgba(30,20,10,.55), 0 0 0 5px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(255,255,255,.18)}
+  .pill.ai .lens{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden}
+  .pill.ai .lens svg{display:block;width:100%;height:100%}
+  .pill.ai span{text-shadow:0 1px 2px rgba(0,0,0,.45), 0 0 12px rgba(0,0,0,.25);letter-spacing:.2px}
   .pill.ai span{position:relative;z-index:2}
   .pill.ai canvas{position:absolute;left:-28px;top:-28px;pointer-events:none;width:calc(100% + 56px);height:calc(100% + 56px)}
   .pill.ai .ring{z-index:1}
@@ -204,7 +206,7 @@
           <button class="btn" id="power"><span id="powerL" class="fade">Start</span></button>
         </div>
         <div class="hint fade reveal d2" id="statusHint">Put on headphones, then tap Start.</div>
-        <button class="pill ai reveal d3" id="learn"><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
+        <button class="pill ai reveal d3" id="learn"><span class="lens"></span><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
       </div>
 
       <div class="panel lg reveal d2">
@@ -994,7 +996,7 @@ function rise(){
       slab.style.clipPath=`polygon(${pts.join(',')},${w}px ${h}px,0px ${h}px)`;
       requestAnimationFrame(f);
     } else {
-      slab.style.clipPath=''; slab.style.transform='translateY(0)'; window.__wmPlace&&window.__wmPlace();
+      slab.style.clipPath=''; slab.style.transform='translateY(0)'; window.__wmPlace&&window.__wmPlace(); window.learnLens&&learnLens.place();
       document.body.classList.add('ready');
     }
     if(p>.55) document.body.classList.add('ready');
@@ -1148,6 +1150,60 @@ $('orb').addEventListener('click',()=>flash('Evening', document.documentElement.
   setInterval(place,1000); // keeps alignment after the slab finishes rising
   window.__wmPlace=place;
 })();
+
+/* ---------- liquid-glass lens for a pill: the room behind it, bent at the rim ----------
+   Uses the liquid-glass skill's rounded-rect displacement map (gradient-difference method,
+   R = x, B = y, neutral grey interior, three staggered passes for a prism fringe), drawn onto
+   an SVG copy of the room so it also refracts on Safari / iPhone. */
+function glassLens(host,{scale=-60,chroma=5,border=0.07,mapBlur=10,zoom=1.08,tint='rgba(20,14,10,.22)'}={}){
+  const NS='http://www.w3.org/2000/svg', mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+  const box=host.querySelector('.lens'), id='lens'+Math.random().toString(36).slice(2,7);
+  let svg,imgs=[],front=0,url='',W=0,H=0;
+  function blur(a,w,h,r){const t=new Float32Array(w*h),o=new Float32Array(w*h),n=2*r+1;
+    for(let y=0;y<h;y++){let s=0,R=y*w;for(let x=-r;x<=r;x++)s+=a[R+Math.min(w-1,Math.max(0,x))];for(let x=0;x<w;x++){t[R+x]=s/n;s+=a[R+Math.min(w-1,x+r+1)]-a[R+Math.max(0,x-r)];}}
+    for(let x=0;x<w;x++){let s=0;for(let y=-r;y<=r;y++)s+=t[Math.min(h-1,Math.max(0,y))*w+x];for(let y=0;y<h;y++){o[y*w+x]=s/n;s+=t[Math.min(h-1,y+r+1)*w+x]-t[Math.max(0,y-r)*w+x];}}
+    return o;}
+  function makeMap(w,h){
+    const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');
+    g.fillStyle='#000';g.fillRect(0,0,w,h);const inset=border*Math.min(w,h),rad=Math.max(h/2-inset,2);
+    g.fillStyle='#fff';g.beginPath();g.roundRect(inset,inset,w-2*inset,h-2*inset,rad);g.fill();
+    const d=g.getImageData(0,0,w,h).data;let a=new Float32Array(w*h);for(let i=0;i<a.length;i++)a[i]=d[i*4]/255;
+    const r=Math.max(1,Math.round(mapBlur/2));a=blur(blur(a,w,h,r),w,h,r);
+    const out=g.createImageData(w,h),o=out.data;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x,k=a[i]*0.93,R=255*x/(w-1),B=255*y/(h-1);
+      o[i*4]=R*(1-k)+128*k;o[i*4+1]=0;o[i*4+2]=B*(1-k)+128*k;o[i*4+3]=255;}
+    g.putImageData(out,0,0);return c.toDataURL();}
+  function build(){
+    W=host.offsetWidth;H=host.offsetHeight;if(!W||!H)return;
+    box.innerHTML='';svg=mk('svg',{viewBox:`0 0 ${W} ${H}`,preserveAspectRatio:'none'},box);
+    const defs=mk('defs',{},svg);
+    const f=mk('filter',{id,x:0,y:0,width:W,height:H,filterUnits:'userSpaceOnUse','color-interpolation-filters':'sRGB'},defs);
+    mk('feImage',{href:makeMap(W,H),x:0,y:0,width:W,height:H,preserveAspectRatio:'none',result:'map'},f);
+    const keep=['1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0','0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0','0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0'];
+    mk('feGaussianBlur',{in:'SourceGraphic',stdDeviation:1.4,result:'soft'},f);
+    [0,1,2].forEach(i=>{mk('feDisplacementMap',{in:'soft',in2:'map',scale:scale+i*chroma,xChannelSelector:'R',yChannelSelector:'B',result:'d'+i},f);
+      mk('feColorMatrix',{in:'d'+i,type:'matrix',values:keep[i],result:'c'+i},f);});
+    mk('feBlend',{in:'c0',in2:'c1',mode:'screen',result:'c01'},f);mk('feBlend',{in:'c01',in2:'c2',mode:'screen'},f);
+    const g=mk('g',{filter:`url(#${id})`},svg);
+    imgs=[mk('image',{preserveAspectRatio:'xMidYMid slice'},g),mk('image',{preserveAspectRatio:'xMidYMid slice',opacity:0},g)];
+    mk('rect',{x:0,y:0,width:W,height:H,fill:tint},svg);
+    const sh=mk('linearGradient',{id:id+'s',x1:0,y1:0,x2:0,y2:1},defs);
+    mk('stop',{offset:0,'stop-color':'#fff','stop-opacity':.38},sh);mk('stop',{offset:.5,'stop-color':'#fff','stop-opacity':.04},sh);mk('stop',{offset:1,'stop-color':'#fff','stop-opacity':.14},sh);
+    mk('rect',{x:0,y:0,width:W,height:H,fill:`url(#${id}s)`},svg);
+    place(); if(url) set(url,true);
+  }
+  function place(){ if(!svg)return; const r=host.getBoundingClientRect(),vw=innerWidth*zoom,vh=innerHeight*zoom;
+    for(const im of imgs){im.setAttribute('x',-r.left-(vw-innerWidth)/2);im.setAttribute('y',-r.top-(vh-innerHeight)/2);im.setAttribute('width',vw);im.setAttribute('height',vh);} }
+  function set(u,instant){ url=u; if(!imgs.length)return; const on=imgs[front^1],off=imgs[front];front^=1;
+    on.setAttribute('href',u); for(const im of imgs) im.style.transition=instant?'none':'opacity 2.2s ease';
+    on.setAttribute('opacity',1); off.setAttribute('opacity',0); }
+  addEventListener('roomchange',e=>set(e.detail));
+  const cur=getComputedStyle(document.documentElement).getPropertyValue('--room').match(/url\("?([^")]+)"?\)/); if(cur) url=cur[1];
+  new ResizeObserver(()=>build()).observe(host);
+  setInterval(place,500); addEventListener('resize',place);
+  return {place};
+}
+const learnLens=glassLens($('learn'),{scale:-34,chroma:4,border:0.1,mapBlur:8,zoom:1.12,tint:'rgba(18,12,8,.24)'});
 
 </script>
 </body>
