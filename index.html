@@ -51,8 +51,19 @@
 
   /* left column */
   .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.1px;background:none;border:0;color:inherit;padding:0;font-family:inherit}
-  .logo{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:-.5px;
+  .logo_unused{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:-.5px;
     background:radial-gradient(circle at 35% 28%,#4fd3a3,#14825a 70%);box-shadow:inset 0 1px 1px rgba(255,255,255,.6), 0 4px 10px -2px rgba(10,80,55,.5)}
+  .brand{gap:12px}
+  .by{font-weight:400;color:var(--sub)} .by b{font-weight:600;color:var(--ink)}
+  .pick{position:relative;width:38px;height:38px;display:grid;place-items:center;flex:none}
+  .pick svg{position:relative;z-index:1;filter:drop-shadow(0 3px 4px rgba(10,60,40,.35))}
+  .pick i{position:absolute;left:50%;top:54%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;
+    border:1.5px solid rgba(31,157,108,.55);box-shadow:0 0 6px rgba(80,220,170,.25), inset 0 0 4px rgba(255,255,255,.4);
+    transform:scale(.3);opacity:0;animation:pickRip 3.6s cubic-bezier(.15,.6,.35,1) infinite}
+  .pick i:nth-child(2){animation-delay:1.2s} .pick i:nth-child(3){animation-delay:2.4s}
+  body.live .pick i{animation-duration:1.8s} body.live .pick i:nth-child(2){animation-delay:.6s} body.live .pick i:nth-child(3){animation-delay:1.2s}
+  html.dark .pick i{border-color:rgba(95,224,176,.55)}
+  @keyframes pickRip{0%{transform:scale(.3);opacity:0}12%{opacity:.95}100%{transform:scale(1.75);opacity:0}}
   .status{margin:26px 0 0;font-size:clamp(30px,2.6vw,40px);line-height:1.08;font-weight:600;letter-spacing:-.04em;height:2.2em;overflow:hidden}
   .fade{transition:opacity .18s ease}
   .field{margin-top:22px;display:flex;align-items:center;gap:12px;height:54px;padding:0 6px 0 22px;border-radius:999px;
@@ -139,16 +150,8 @@
   html.dark #orb::after{transform:translateX(20px)}
 
   /* giant glass wordmark, cut off by the bottom edge */
-  .word{position:absolute;left:0;right:0;bottom:0;z-index:1;pointer-events:none;white-space:nowrap;text-align:center;
-    font-size:min(14.6vw,21vh);font-weight:800;letter-spacing:-.06em;line-height:.8;margin-bottom:-.12em;
-    filter:drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(60,40,20,.3)) drop-shadow(0 14px 18px rgba(50,30,10,.3))}
-  .word span{display:inline-block;color:transparent;-webkit-background-clip:text;background-clip:text;
-    background:var(--room) center/cover fixed;-webkit-background-clip:text;
-    -webkit-text-stroke:1.5px rgba(255,255,255,.75)}
-  html.dark .word{filter:drop-shadow(0 1px 0 rgba(255,220,180,.35)) drop-shadow(0 14px 18px rgba(0,0,0,.5))}
-  html.dark .word span{-webkit-text-stroke:1px rgba(255,220,180,.22)}
-  .word::after{content:"";position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(180deg,rgba(255,255,255,.0),rgba(255,255,255,.0) 40%,rgba(255,255,255,.06))}
+  html.dark #wm .bev{opacity:.5}
+  #wm{position:absolute;left:0;right:0;bottom:0;z-index:1;pointer-events:none;overflow:visible;display:block}
 
   /* glass droplet cursor + ripples */
   #drop{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;pointer-events:none;z-index:50;
@@ -186,7 +189,14 @@
   <div class="inner">
     <div class="top">
       <div class="left">
-        <button class="brand reveal d1" id="brand" title="Replay"><span class="logo">PR</span>Pocket Reverb</button>
+        <button class="brand reveal d1" id="brand" title="Replay the intro">
+          <span class="pick"><i></i><i></i><i></i>
+            <svg viewBox="0 0 40 44" width="30" height="33"><defs>
+              <linearGradient id="pickG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fe0b0"/><stop offset=".55" stop-color="#1a9a6c"/><stop offset="1" stop-color="#0d6a4a"/></linearGradient>
+              <linearGradient id="pickS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+              <path d="M20 42.5C14.5 37 2 23 2 12.5 2 5.5 9.5 1.5 20 1.5s18 4 18 11C38 23 25.5 37 20 42.5z" fill="url(#pickG)" stroke="rgba(255,255,255,.6)" stroke-width="1"/>
+              <path d="M8 9.5C10 6 14.5 4.5 20 4.5c4.5 0 8.5 1 11 3.2C24 6.5 14 7.5 8 9.5z" fill="url(#pickS)"/></svg></span>
+          <span class="by">Created by <b>Parth Sarkar</b></span></button>
         <div class="status fade reveal d1" id="status">Ready when you are</div>
         <div class="field reveal d2">
           <div class="lvl"><div class="row"><span>Input level</span><span id="hear">waiting</span></div><div class="meter"><i id="meterFill"></i></div></div>
@@ -222,7 +232,7 @@
       </div>
     </div>
 
-    <div class="word reveal d4" aria-hidden="true"><span>Pocket Reverb</span></div>
+    <svg id="wm" class="reveal d4" aria-hidden="true"></svg>
   </div>
 </section>
 
@@ -480,6 +490,7 @@ function showBg(url){
     bgFront^=1; const on=layers[bgFront], off=layers[bgFront^1];
     on.style.backgroundImage=`url("${url}")`; on.classList.remove('show'); void on.offsetWidth; on.classList.add('show'); off.classList.remove('show');
     document.documentElement.style.setProperty('--room',`url("${url}")`);
+    window.dispatchEvent(new CustomEvent('roomchange',{detail:url}));
   };
   (img.decode?img.decode():Promise.resolve()).then(go,go);
 }
@@ -982,7 +993,7 @@ function rise(){
       slab.style.clipPath=`polygon(${pts.join(',')},${w}px ${h}px,0px ${h}px)`;
       requestAnimationFrame(f);
     } else {
-      slab.style.clipPath=''; slab.style.transform='translateY(0)';
+      slab.style.clipPath=''; slab.style.transform='translateY(0)'; window.__wmPlace&&window.__wmPlace();
       document.body.classList.add('ready');
     }
     if(p>.55) document.body.classList.add('ready');
@@ -1030,6 +1041,110 @@ for(const id in icoNames){
   });
 }
 $('orb').addEventListener('click',()=>flash('Evening', document.documentElement.classList.contains('dark')?'on':'off'));
+
+/* ---------- glass wordmark: thick clear letters that bend the room behind them ----------
+   Same optics as the liquid-glass skill (displacement map + three staggered passes for a
+   prism fringe, sRGB filter), but the map is built from the letter shapes so it works on
+   text and on every browser, iPhone included. */
+(function(){
+  const NS='http://www.w3.org/2000/svg', svg=$('wm'), TEXT='Pocket Reverb';
+  const FONT='800 100px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif';
+  const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+  let imgA,imgB,front=0,curUrl='', W=0,H=0, built=false;
+
+  function boxBlur(src,w,h,r){
+    const tmp=new Float32Array(w*h), out=new Float32Array(w*h), n=2*r+1;
+    for(let y=0;y<h;y++){let acc=0,row=y*w;for(let x=-r;x<=r;x++)acc+=src[row+Math.min(w-1,Math.max(0,x))];
+      for(let x=0;x<w;x++){tmp[row+x]=acc/n;acc+=src[row+Math.min(w-1,x+r+1)]-src[row+Math.max(0,x-r)];}}
+    for(let x=0;x<w;x++){let acc=0;for(let y=-r;y<=r;y++)acc+=tmp[Math.min(h-1,Math.max(0,y))*w+x];
+      for(let y=0;y<h;y++){out[y*w+x]=acc/n;acc+=tmp[Math.min(h-1,y+r+1)*w+x]-tmp[Math.max(0,y-r)*w+x];}}
+    return out;
+  }
+  // height map from the letters -> slope -> R (x) and B (y) displacement, 128 = no bend
+  function makeMap(w,h,fs,bx,by){
+    const s=0.5, mw=Math.max(2,Math.round(w*s)), mh=Math.max(2,Math.round(h*s));
+    const c=document.createElement('canvas'); c.width=mw; c.height=mh; const g=c.getContext('2d');
+    g.fillStyle='#000'; g.fillRect(0,0,mw,mh); g.fillStyle='#fff';
+    g.font=FONT.replace('100px',(fs*s).toFixed(1)+'px'); g.textAlign='center'; g.textBaseline='alphabetic';
+    try{g.letterSpacing=(-0.06*fs*s)+'px';}catch(_){}
+    g.fillText(TEXT,bx*s,by*s);
+    const d=g.getImageData(0,0,mw,mh).data; let a=new Float32Array(mw*mh);
+    for(let i=0;i<a.length;i++)a[i]=d[i*4]/255;
+    const r=Math.max(2,Math.round(fs*s*0.045));
+    a=boxBlur(boxBlur(a,mw,mh,r),mw,mh,r);
+    const out=g.createImageData(mw,mh), o=out.data, k=255*1.6;
+    for(let y=0;y<mh;y++)for(let x=0;x<mw;x++){
+      const i=y*mw+x, gx=a[i+(x<mw-1?1:0)]-a[i-(x>0?1:0)], gy=a[i+(y<mh-1?mw:0)]-a[i-(y>0?mw:0)];
+      o[i*4]=Math.max(0,Math.min(255,128+gx*k)); o[i*4+1]=128; o[i*4+2]=Math.max(0,Math.min(255,128+gy*k)); o[i*4+3]=255;
+    }
+    g.putImageData(out,0,0); return c.toDataURL();
+  }
+
+  function build(){
+    const slab=$('slab'); W=slab.clientWidth; if(!W) return;
+    const fs=Math.min(W*0.165, innerHeight*0.23);
+    H=Math.round(fs*0.84);
+    svg.setAttribute('width',W); svg.setAttribute('height',H); svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    svg.innerHTML='';
+    const defs=mk('defs',{},svg), bx=W/2, by=H-fs*0.07;
+    const tAttr={x:bx,y:by,'text-anchor':'middle','font-size':fs,'font-weight':800,'letter-spacing':(-0.06*fs).toFixed(2),
+      'font-family':'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'};
+    const cp=mk('clipPath',{id:'wmClip'},defs); mk('text',tAttr,cp).textContent=TEXT;
+
+    // refraction filter (skill technique: 3 passes R/G/B at staggered scales, screen-blended)
+    const f=mk('filter',{id:'wmRefract',x:0,y:0,width:W,height:H,filterUnits:'userSpaceOnUse','color-interpolation-filters':'sRGB'},defs);
+    mk('feImage',{href:makeMap(W,H,fs,bx,by),x:0,y:0,width:W,height:H,preserveAspectRatio:'none',result:'map'},f);
+    const base=-fs*0.34, keep=['1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0','0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0','0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0'];
+    [0,1,2].forEach(i=>{
+      mk('feDisplacementMap',{in:'SourceGraphic',in2:'map',scale:(base+i*fs*0.035).toFixed(1),xChannelSelector:'R',yChannelSelector:'B',result:'d'+i},f);
+      mk('feColorMatrix',{in:'d'+i,type:'matrix',values:keep[i],result:'c'+i},f);
+    });
+    mk('feBlend',{in:'c0',in2:'c1',mode:'screen',result:'c01'},f); mk('feBlend',{in:'c01',in2:'c2',mode:'screen'},f);
+
+    // bevel: light on the upper-left edge, shade on the lower-right, a soft drop shadow on the slab
+    const bev=mk('filter',{id:'wmBevel',x:-20,y:-20,width:W+40,height:H+40,filterUnits:'userSpaceOnUse'},defs);
+    const bl=Math.max(1.5,fs*0.018);
+    mk('feGaussianBlur',{in:'SourceAlpha',stdDeviation:bl,result:'b'},bev);
+    mk('feOffset',{in:'b',dx:bl*1.1,dy:bl*1.4,result:'o1'},bev);
+    mk('feComposite',{in:'SourceAlpha',in2:'o1',operator:'out',result:'hi'},bev);
+    mk('feFlood',{'flood-color':'#fff','flood-opacity':.85,result:'w'},bev); mk('feComposite',{in:'w',in2:'hi',operator:'in',result:'hiC'},bev);
+    mk('feOffset',{in:'b',dx:-bl*1.1,dy:-bl*1.4,result:'o2'},bev);
+    mk('feComposite',{in:'SourceAlpha',in2:'o2',operator:'out',result:'sh'},bev);
+    mk('feFlood',{'flood-color':'#3a2614','flood-opacity':.42,result:'k'},bev); mk('feComposite',{in:'k',in2:'sh',operator:'in',result:'shC'},bev);
+    const m=mk('feMerge',{},bev); mk('feMergeNode',{in:'shC'},m); mk('feMergeNode',{in:'hiC'},m);
+    const ds=mk('filter',{id:'wmShadow',x:-40,y:-40,width:W+80,height:H+80,filterUnits:'userSpaceOnUse'},defs);
+    mk('feGaussianBlur',{in:'SourceAlpha',stdDeviation:fs*0.05,result:'b'},ds); mk('feOffset',{in:'b',dx:fs*0.03,dy:fs*0.05,result:'o'},ds);
+    mk('feComponentTransfer',{in:'o'},ds).appendChild(mk('feFuncA',{type:'linear',slope:.35}));
+    const sheen=mk('linearGradient',{id:'wmSheen',x1:0,y1:0,x2:0,y2:1},defs);
+    mk('stop',{offset:0,'stop-color':'#fff','stop-opacity':.32},sheen); mk('stop',{offset:.45,'stop-color':'#fff','stop-opacity':.04},sheen); mk('stop',{offset:1,'stop-color':'#fff','stop-opacity':.12},sheen);
+
+    mk('text',{...tAttr,fill:'#000',filter:'url(#wmShadow)'},svg).textContent=TEXT;      // shadow on the slab
+    const lens=mk('g',{'clip-path':'url(#wmClip)'},svg);
+    const room=mk('g',{filter:'url(#wmRefract)'},lens);                                  // the room, bent
+    imgA=mk('image',{preserveAspectRatio:'xMidYMid slice'},room); imgB=mk('image',{preserveAspectRatio:'xMidYMid slice',opacity:0},room);
+    mk('rect',{x:0,y:0,width:W,height:H,fill:'url(#wmSheen)'},lens);                    // glass tint + sheen
+    mk('text',{...tAttr,fill:'#fff',filter:'url(#wmBevel)',class:'bev'},svg).textContent=TEXT;       // bevelled edges
+    mk('text',{...tAttr,fill:'none',stroke:'rgba(255,255,255,.55)','stroke-width':1},svg).textContent=TEXT; // crisp rim
+    built=true; place(); if(curUrl) setImg(curUrl,true);
+  }
+  // line the photo up with the real background, magnified a touch like thick glass
+  function place(){
+    if(!built) return;
+    const r=svg.getBoundingClientRect(), z=1.06, vw=innerWidth*z, vh=innerHeight*z;
+    for(const im of [imgA,imgB]){ im.setAttribute('x',-r.left-(vw-innerWidth)/2); im.setAttribute('y',-r.top-(vh-innerHeight)/2); im.setAttribute('width',vw); im.setAttribute('height',vh); }
+  }
+  function setImg(url,instant){
+    curUrl=url; if(!built) return;
+    const on=front?imgA:imgB, off=front?imgB:imgA; front^=1;
+    on.setAttribute('href',url); on.style.transition=instant?'none':'opacity 2.2s ease'; off.style.transition=on.style.transition;
+    on.setAttribute('opacity',1); off.setAttribute('opacity',0);
+  }
+  addEventListener('roomchange',e=>setImg(e.detail));
+  let t; addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(build,150);});
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(build);
+  setInterval(place,1000); // keeps alignment after the slab finishes rising
+  window.__wmPlace=place;
+})();
 
 </script>
 </body>
