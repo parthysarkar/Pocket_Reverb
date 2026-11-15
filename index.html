@@ -23,12 +23,13 @@
   @media (pointer:fine){ body, body *{cursor:none !important} }
 
   /* ---------- the room ---------- */
-  #room{position:fixed;inset:-4%;background:var(--room) center/cover no-repeat;
-    filter:blur(14px) saturate(1.05);transform:scale(1.04);transition:filter 1.8s ease, transform 1.8s ease, opacity .8s}
-  body.up #room{filter:blur(1.2px);transform:scale(1)}
+  #room{position:fixed;inset:-3%;filter:blur(14px) saturate(1.05);transform:scale(1.05);transition:filter 1.8s ease, transform 1.8s ease;background:#2a221c}
+  body.up #room{filter:blur(0);transform:scale(1)}
+  #room .bg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 2.2s ease, transform 12s linear;transform:scale(1.03)}
+  #room .bg.show{opacity:1;transform:scale(1.09)}
 
   /* ---------- the glass slab ---------- */
-  .slab{position:fixed;left:22px;right:22px;top:clamp(70px,19vh,210px);bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-radius:34px;
+  .slab{position:fixed;left:22px;right:22px;top:clamp(36px,16vh,200px);bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-radius:34px;
     transform:translateY(105%);will-change:transform;overflow:hidden;
     background:linear-gradient(180deg,var(--glass2),var(--glass) 40%);
     -webkit-backdrop-filter:blur(26px) saturate(1.25) brightness(1.04);backdrop-filter:blur(26px) saturate(1.25) brightness(1.04);
@@ -40,7 +41,8 @@
                linear-gradient(100deg,rgba(255,255,255,.10),transparent 30%,transparent 70%,rgba(255,255,255,.08))}
   html.dark .slab::before{opacity:.35}
 
-  .inner{position:relative;height:100%;padding:34px 40px 0;display:flex;flex-direction:column}
+  .inner{position:relative;height:100%;padding:clamp(18px,3.6vh,34px) 40px 0;display:flex;flex-direction:column}
+  .top,.bottom{position:relative;z-index:2}
   .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s ease, transform .7s ease}
   body.ready .reveal{opacity:1;transform:none}
   body.ready .d1{transition-delay:.05s} body.ready .d2{transition-delay:.15s} body.ready .d3{transition-delay:.25s} body.ready .d4{transition-delay:.35s}
@@ -112,7 +114,8 @@
   .micsel option{color:#1e1915}
 
   /* bottom row */
-  .bottom{margin-top:clamp(18px,3vh,30px);display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub)}
+  .bottom{margin-top:clamp(18px,3vh,30px);display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:500;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.35)}
+  html.dark .bottom{text-shadow:none}
   .bottom .l{display:flex;gap:22px;align-items:center}
   .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9a9088;margin-right:7px;vertical-align:1px;transition:background .3s}
   body.live .dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
@@ -136,12 +139,12 @@
   html.dark #orb::after{transform:translateX(20px)}
 
   /* giant glass wordmark, cut off by the bottom edge */
-  .word{margin-top:auto;padding-top:8px;position:relative;white-space:nowrap;text-align:center;
-    font-size:clamp(96px,14.6vw,300px);font-weight:800;letter-spacing:-.06em;line-height:.8;margin-bottom:-.17em;
-    filter:drop-shadow(0 1px 0 rgba(255,255,255,.75)) drop-shadow(0 -1px 0 rgba(60,40,20,.25)) drop-shadow(0 14px 18px rgba(50,30,10,.28))}
+  .word{position:absolute;left:0;right:0;bottom:0;z-index:1;pointer-events:none;white-space:nowrap;text-align:center;
+    font-size:min(14.6vw,21vh);font-weight:800;letter-spacing:-.06em;line-height:.8;margin-bottom:-.12em;
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,.8)) drop-shadow(0 -1px 0 rgba(60,40,20,.3)) drop-shadow(0 14px 18px rgba(50,30,10,.3))}
   .word span{display:inline-block;color:transparent;-webkit-background-clip:text;background-clip:text;
     background:var(--room) center/cover fixed;-webkit-background-clip:text;
-    -webkit-text-stroke:1px rgba(255,255,255,.55)}
+    -webkit-text-stroke:1.5px rgba(255,255,255,.75)}
   html.dark .word{filter:drop-shadow(0 1px 0 rgba(255,220,180,.35)) drop-shadow(0 14px 18px rgba(0,0,0,.5))}
   html.dark .word span{-webkit-text-stroke:1px rgba(255,220,180,.22)}
   .word::after{content:"";position:absolute;inset:0;pointer-events:none;
@@ -163,11 +166,19 @@
 
   #toast{position:fixed;z-index:60;left:50%;top:18px;transform:translateX(-50%);padding:12px 16px;border-radius:14px;font-size:14px;display:none;
     color:#fff;background:rgba(150,40,35,.9)}
-  @media (prefers-reduced-motion:reduce){ .ripple{display:none} }
+  @media (prefers-reduced-motion:reduce){ .ripple{display:none} #room .bg{transition:opacity 2s} }
+  /* shorter windows: tighten everything so the buttons and the wordmark stay on screen */
+  @media (max-height:820px){
+    .status{margin-top:16px;font-size:30px} .field{margin-top:14px;height:48px} .btn{height:38px}
+    .hint{margin-top:7px;height:30px} .pill.ai{margin-top:8px;height:46px}
+    .panel{padding:16px 22px 12px} .col h4{margin-bottom:7px} .ctl{margin-bottom:7px} .tab{padding:5px 10px}
+    .bottom{margin-top:14px}
+  }
+  @media (max-height:680px){ .status{font-size:26px;height:2.25em} .ctl label{font-size:12.5px} .tab{font-size:13.5px} }
 </style>
 </head>
 <body>
-<div id="room"></div>
+<div id="room"><div class="bg"></div><div class="bg"></div></div>
 <div id="toast"></div>
 <div id="drop"></div>
 
@@ -454,53 +465,34 @@
 
 </script>
 <script>
-/* ---------- a warm living room, drawn in code (day and evening) ---------- */
-function roomSVG(night){
-  const wallA=night?'#3a3029':'#efe7dc', wallB=night?'#221b16':'#d8ccbd', seam=night?'rgba(255,230,200,.05)':'rgba(255,255,255,.55)';
-  const wood=night?'#3b2516':'#7a5236', woodIn=night?'#20140c':'#4a301e', led=night?'#ffb35c':'#ffcf8a', ledA=night?.95:.6;
-  const tv=night?'#0b0a0a':'#1d1c1d', floorA=night?'#2a1d14':'#a9825f', floorB=night?'#160f0a':'#7b5a40';
-  const light=night?0:.55;
-  const shelf=(x,w,y0)=>{let o=`<rect x="${x-14}" y="${y0-14}" width="${w+28}" height="${560-y0+40}" fill="${wood}"/><rect x="${x}" y="${y0}" width="${w}" height="${560-y0}" fill="${woodIn}"/>`;
-    for(const y of [y0+120,y0+250,y0+380]){
-      o+=`<rect x="${x}" y="${y-60}" width="${w}" height="60" fill="url(#ledg)" opacity="${ledA}"/><rect x="${x}" y="${y}" width="${w}" height="12" fill="${wood}"/><rect x="${x}" y="${y}" width="${w}" height="3" fill="${led}" opacity="${ledA}"/>`; }
-    return o;};
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
-  <defs>
-    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${wallB}"/><stop offset=".35" stop-color="${wallA}"/><stop offset=".75" stop-color="${wallA}"/><stop offset="1" stop-color="${wallB}"/></linearGradient>
-    <linearGradient id="ledg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${led}" stop-opacity=".9"/><stop offset="1" stop-color="${led}" stop-opacity="0"/></linearGradient>
-    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${floorA}"/><stop offset="1" stop-color="${floorB}"/></linearGradient>
-    <radialGradient id="sun" cx=".92" cy=".3" r=".6"><stop offset="0" stop-color="#fff" stop-opacity="${light}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-    <radialGradient id="lamp" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${led}" stop-opacity="${night?.55:.0}"/><stop offset="1" stop-color="${led}" stop-opacity="0"/></radialGradient>
-    <linearGradient id="tvg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/></linearGradient>
-  </defs>
-  <rect width="1600" height="1000" fill="url(#wall)"/>
-  ${[160,520,800,1080,1440].map(x=>`<rect x="${x}" y="0" width="2" height="640" fill="${seam}"/>`).join('')}
-  ${shelf(300,190,40)}${shelf(1110,250,40)}
-  <!-- shelf objects -->
-  <ellipse cx="395" cy="135" rx="42" ry="38" fill="${night?'#d9cbb8':'#f3ede4'}"/><rect x="383" y="92" width="24" height="12" fill="${night?'#d9cbb8':'#f3ede4'}"/>
-  <rect x="325" y="245" width="10" height="45" fill="#e8e0d4"/><rect x="337" y="252" width="9" height="38" fill="#cfc4b4"/><rect x="348" y="248" width="11" height="42" fill="#efe7dc"/>
-  <rect x="1150" y="140" width="120" height="10" fill="#e9e1d4"/><rect x="1155" y="130" width="110" height="10" fill="#d5cab9"/><rect x="1160" y="121" width="100" height="9" fill="#f2ece2"/>
-  <path d="M1200 290 q-26 -6 -20 -40 q4 -20 14 -26 q-8 -14 4 -22 q14 -6 18 8 q4 12 -4 16 q14 8 14 26 q2 30 -26 38z" fill="#141210"/>
-  <rect x="1300" y="400" width="26" height="30" fill="#2a2420"/>
-  <!-- tv -->
-  <rect x="540" y="250" width="540" height="300" rx="4" fill="${tv}"/><rect x="540" y="250" width="540" height="300" fill="url(#tvg)"/>
-  <!-- sideboard + floor -->
-  <rect x="0" y="600" width="1600" height="400" fill="url(#floor)"/>
-  <rect x="200" y="560" width="1200" height="120" rx="6" fill="${night?'#3a281b':'#b9946f'}"/><rect x="200" y="560" width="1200" height="6" fill="${night?'#5a3e28':'#d7b896'}"/>
-  ${[0,1,2,3].map(i=>`<rect x="${230+i*295}" y="590" width="270" height="70" rx="4" fill="none" stroke="${night?'#2a1c12':'#a07c5a'}" stroke-width="2"/>`).join('')}
-  <ellipse cx="1180" cy="550" rx="40" ry="10" fill="#000" opacity=".25"/><path d="M1150 552 q30 -70 60 0z" fill="${night?'#4d3a2c':'#9b7b60'}"/>
-  <rect x="540" y="520" width="140" height="40" rx="3" fill="${night?'#2c2622':'#e4dccf'}"/>
-  <rect width="1600" height="1000" fill="url(#sun)"/>
-  <circle cx="1400" cy="430" r="380" fill="url(#lamp)"/><circle cx="250" cy="420" r="320" fill="url(#lamp)"/>
-  ${night?'<rect width="1600" height="1000" fill="#0d0a14" opacity=".25"/>':''}
-</svg>`;
+/* ---------- real room photos: day set and evening set, cross-fading every 10 s ---------- */
+const BG={
+  day:  {land:['bg/day-l1.jpg','bg/day-p1.jpg'], port:['bg/day-p1.jpg','bg/day-l1.jpg']},
+  night:{land:['bg/night-l1.jpg','bg/night-l2.jpg','bg/night-l3.jpg','bg/night-p1.jpg'], port:['bg/night-p1.jpg','bg/night-l1.jpg','bg/night-l2.jpg','bg/night-l3.jpg']},
+};
+let bgIdx=0, bgFront=0, bgTimer=null, bgKey='';
+const portraitMQ=matchMedia('(orientation: portrait)');
+function bgList(){ const night=document.documentElement.classList.contains('dark'); return BG[night?'night':'day'][portraitMQ.matches?'port':'land']; }
+function showBg(url){
+  const layers=document.querySelectorAll('#room .bg'); if(!layers.length) return;
+  const img=new Image(); img.src=url;
+  const go=()=>{
+    bgFront^=1; const on=layers[bgFront], off=layers[bgFront^1];
+    on.style.backgroundImage=`url("${url}")`; on.classList.remove('show'); void on.offsetWidth; on.classList.add('show'); off.classList.remove('show');
+    document.documentElement.style.setProperty('--room',`url("${url}")`);
+  };
+  (img.decode?img.decode():Promise.resolve()).then(go,go);
 }
-function setRoom(){
-  const night=document.documentElement.classList.contains('dark');
-  document.documentElement.style.setProperty('--room',`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(roomSVG(night))}")`);
+function bgCycle(restart){
+  const list=bgList(), key=list.join();
+  if(restart || key!==bgKey){ bgKey=key; bgIdx=0; } else bgIdx=(bgIdx+1)%list.length;
+  showBg(list[bgIdx]);
 }
-setRoom();
-new MutationObserver(setRoom).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+function startBg(){ clearInterval(bgTimer); bgCycle(true); bgTimer=setInterval(()=>bgCycle(false),10000); }
+document.addEventListener('DOMContentLoaded',startBg);
+new MutationObserver(startBg).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+portraitMQ.addEventListener?.('change',startBg);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) clearInterval(bgTimer); else startBg(); });
 
 </script>
 <script>
@@ -1027,6 +1019,17 @@ new MutationObserver(()=>{
   const on=$('power').classList.contains('on');
   document.body.classList.toggle('live',on); $('liveTxt').textContent=on?'Listening':'Mic off';
 }).observe($('power'),{attributes:true,attributeFilter:['class']});
+
+/* icon buttons say what they did */
+const icoNames={focus:'Guitar focus',apple:'Voice isolation',dry:'Hear my guitar'};
+for(const id in icoNames){
+  $(id).addEventListener('change',e=>{
+    let v=e.target.checked?'on':'off';
+    if(!ctx && id!=='apple') v+=' (works once you tap Start)';
+    flash(icoNames[id],v);
+  });
+}
+$('orb').addEventListener('click',()=>flash('Evening', document.documentElement.classList.contains('dark')?'on':'off'));
 
 </script>
 </body>
