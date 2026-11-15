@@ -5,337 +5,218 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pocket Reverb — live guitar reverb</title>
 <script>try{if(localStorage.getItem('pr_theme')==='dark')document.documentElement.classList.add('dark')}catch(_){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#1d1b24; --sub:#5d5a68; --mute:#8a8695;
-    --violet:#7b63f2; --violet2:#9b85fa; --teal:#56c7bb; --teal2:#8be3d6;
-    --cast:22px 30px 46px -16px rgba(72,62,104,.38);
+    --ink:#1e1915; --sub:#5f554c; --mute:#8b8076;
+    --glass:rgba(255,250,244,.16); --glass2:rgba(255,250,244,.30);
+    --rim:rgba(255,255,255,.65); --accent:#1f9d6c; --violet:#2a2420;
+    --room:none;
   }
+  html.dark{ --ink:#f3ede6; --sub:#b8ada2; --mute:#8a8077;
+    --glass:rgba(24,20,17,.42); --glass2:rgba(40,34,30,.40); --rim:rgba(255,235,210,.22); --accent:#3fd39a; --violet:#f3ede6 }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;min-height:100%;color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",sans-serif}
-  body{padding:max(18px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
+  html,body{margin:0;height:100%;overflow:hidden;background:#d9cfc3;color:var(--ink);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  html.dark,html.dark body{background:#16120f}
+  @media (pointer:fine){ body, body *{cursor:none !important} }
 
-  /* ---- room lighting: warm window light top-left, cool shadow falling diagonally ---- */
-  /* ---- sunlit wall: warm sun from the left, cool shadow in the top-right ---- */
-  .room{position:fixed;inset:0;z-index:-2;
-    background:
-      linear-gradient(112deg, rgba(255,247,230,0) 8%, rgba(255,246,226,.55) 22%, rgba(255,247,232,.12) 36%, rgba(255,247,232,0) 44%),
-      radial-gradient(75% 60% at -8% 34%, rgba(255,243,222,.98) 0, rgba(255,238,216,.6) 38%, rgba(255,238,216,0) 72%),
-      linear-gradient(128deg, rgba(0,0,0,0) 0 48%, rgba(74,82,112,.24) 60%, rgba(62,70,100,.55) 80%, rgba(54,62,92,.68) 100%),
-      radial-gradient(60% 40% at 100% 0, rgba(70,80,112,.55) 0, rgba(70,80,112,0) 75%),
-      linear-gradient(100deg, #f4e3d6 0, #ead8d0 42%, #d6c8cd 72%, #c2b8c6 100%)}
-  .room::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:multiply;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .5  0 0 0 0 .47  0 0 0 0 .5  0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
-  .spill{position:fixed;z-index:-1;border-radius:50%;filter:blur(40px);opacity:.6;pointer-events:none}
-  .s1{width:200px;height:150px;right:-50px;top:54%;background:#c890f2}
-  .s2{width:170px;height:130px;right:10px;top:70%;background:#7fdcd8}
-  .s3{width:150px;height:90px;right:-30px;bottom:6%;background:#ffb39a;opacity:.5}
+  /* ---------- the room ---------- */
+  #room{position:fixed;inset:-4%;background:var(--room) center/cover no-repeat;
+    filter:blur(14px) saturate(1.05);transform:scale(1.04);transition:filter 1.8s ease, transform 1.8s ease, opacity .8s}
+  body.up #room{filter:blur(1.2px);transform:scale(1)}
 
-  .wrap{max-width:440px;margin:0 auto}
+  /* ---------- the glass slab ---------- */
+  .slab{position:fixed;left:22px;right:22px;top:clamp(70px,19vh,210px);bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-radius:34px;
+    transform:translateY(105%);will-change:transform;overflow:hidden;
+    background:linear-gradient(180deg,var(--glass2),var(--glass) 40%);
+    -webkit-backdrop-filter:blur(26px) saturate(1.25) brightness(1.04);backdrop-filter:blur(26px) saturate(1.25) brightness(1.04);
+    box-shadow:0 -1px 0 var(--rim), inset 0 1.5px 0 rgba(255,255,255,.75), inset 0 0 0 1px rgba(255,255,255,.28),
+      inset 0 18px 40px -20px rgba(255,255,255,.35), 0 40px 80px -30px rgba(40,25,10,.45)}
+  html.dark .slab{box-shadow:inset 0 1.5px 0 rgba(255,230,200,.28), inset 0 0 0 1px rgba(255,230,200,.10), 0 40px 80px -30px rgba(0,0,0,.6)}
+  .slab::before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+    background:radial-gradient(60% 50% at 22% 10%,rgba(255,255,255,.22),transparent 70%),
+               linear-gradient(100deg,rgba(255,255,255,.10),transparent 30%,transparent 70%,rgba(255,255,255,.08))}
+  html.dark .slab::before{opacity:.35}
 
-  /* ---- big outer glass sheet (like the kit's frame) ---- */
-  /* ---- clear, shiny back glass ---- */
-  .frame{position:relative;border-radius:36px;padding:22px 16px 18px;
-    background:
-      radial-gradient(40% 16% at 96% 99%, rgba(255,214,190,.5) 0, rgba(255,214,190,0) 100%),
-      linear-gradient(135deg, rgba(255,255,255,.20) 0, rgba(255,255,255,.03) 30%, rgba(255,255,255,0) 60%, rgba(255,255,255,.10) 100%);
-    box-shadow:
-      38px 50px 70px -22px rgba(52,48,88,.50),
-      14px 18px 22px -14px rgba(52,48,88,.30),
-      inset 0 0 0 1px rgba(255,255,255,.75),
-      inset 2px 2px 2px rgba(255,255,255,.95),
-      inset -2px -3px 5px rgba(96,104,150,.30),
-      inset 0 0 26px rgba(255,255,255,.16)}
-  .frame::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-    background:
-      linear-gradient(118deg, rgba(255,255,255,.42) 0, rgba(255,255,255,.10) 9%, rgba(255,255,255,0) 17%),
-      linear-gradient(118deg, rgba(255,255,255,0) 56%, rgba(255,255,255,.14) 62%, rgba(255,255,255,0) 70%)}
-  .frame>*{position:relative}
+  .inner{position:relative;height:100%;padding:34px 40px 0;display:flex;flex-direction:column}
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .7s ease, transform .7s ease}
+  body.ready .reveal{opacity:1;transform:none}
+  body.ready .d1{transition-delay:.05s} body.ready .d2{transition-delay:.15s} body.ready .d3{transition-delay:.25s} body.ready .d4{transition-delay:.35s}
 
-  header{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 18px}
-  h1{margin:0;font-size:27px;font-weight:700;letter-spacing:-.5px}
-  .tag{font-size:13px;color:var(--sub);margin-top:3px}
-  .orb{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;
-    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(255,255,255,.25));
-    box-shadow:6px 9px 16px -4px rgba(72,62,104,.35), inset 0 0 0 1.5px rgba(160,140,250,.6), inset 0 0 0 3px rgba(130,220,210,.25)}
-  .orb i{width:8px;height:8px;border-radius:50%;background:#a7a2b5;transition:.2s}
-  .orb.on i{background:#4ad48a;box-shadow:0 0 10px #4ad48a}
+  .top{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:clamp(28px,4vw,64px);align-items:start}
 
-  /* ---- glass cards ---- */
-  .glass{position:relative;border-radius:28px;padding:18px 16px;margin-top:16px;
-    background:linear-gradient(165deg,rgba(255,255,255,.46),rgba(255,255,255,.16));
-    box-shadow:var(--cast), inset 0 1px 1px rgba(255,255,255,.95),
-      inset 0 0 0 1px rgba(255,255,255,.6), inset 0 -10px 24px rgba(255,255,255,.1);
-    -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
-  .sec{font-size:17px;font-weight:650;letter-spacing:-.2px;margin:0 0 2px}
-  .secsub{font-size:13px;color:var(--sub);margin-bottom:6px}
-
-  /* iridescent hero card */
-  .hero{background:linear-gradient(135deg,rgba(255,196,196,.72) 0%,rgba(226,178,240,.66) 38%,rgba(172,180,250,.62) 68%,rgba(150,226,222,.62) 100%)}
-  .hero::after{content:"";position:absolute;z-index:-1;left:12%;right:-4%;bottom:-18px;height:46px;border-radius:50%;
-    background:linear-gradient(90deg,#f7a6c6,#b58cf4 45%,#7fd9e0);filter:blur(22px);opacity:.75}
-  .status{font-size:21px;font-weight:650;letter-spacing:-.3px;height:28px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #statusHint{height:37px;overflow:hidden}
+  /* left column */
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;letter-spacing:-.1px;background:none;border:0;color:inherit;padding:0;font-family:inherit}
+  .logo{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:-.5px;
+    background:radial-gradient(circle at 35% 28%,#4fd3a3,#14825a 70%);box-shadow:inset 0 1px 1px rgba(255,255,255,.6), 0 4px 10px -2px rgba(10,80,55,.5)}
+  .status{margin:26px 0 0;font-size:clamp(30px,2.6vw,40px);line-height:1.08;font-weight:600;letter-spacing:-.04em;height:2.2em;overflow:hidden}
   .fade{transition:opacity .18s ease}
-  .pill span{display:inline-block}
-  .hint{font-size:13px;color:var(--sub);margin-top:3px;line-height:1.4}
-  .meter{height:12px;border-radius:6px;margin:16px 0 4px;overflow:hidden;
-    background:rgba(255,255,255,.45);box-shadow:inset 0 1px 3px rgba(60,50,90,.18), inset 0 0 0 1px rgba(255,255,255,.7)}
-  .meter i{display:block;height:100%;width:0;border-radius:6px;transition:width .06s;
-    background:linear-gradient(90deg,#8b70f6,#c58cf0 55%,#7ad9d2);box-shadow:0 0 12px rgba(160,120,250,.8)}
-  .metarow{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
-  .metarow b{font-weight:600}
-  #hear.on{color:#1f9d5a}
+  .field{margin-top:22px;display:flex;align-items:center;gap:12px;height:54px;padding:0 6px 0 22px;border-radius:999px;
+    background:rgba(40,30,22,.42);box-shadow:inset 0 1px 2px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,.14), 0 1px 0 rgba(255,255,255,.35)}
+  html.dark .field{background:rgba(0,0,0,.35)}
+  .lvl{flex:1;display:flex;flex-direction:column;gap:6px;color:rgba(255,255,255,.75);font-size:12.5px}
+  .lvl .row{display:flex;justify-content:space-between}
+  #hear.on{color:#7ff0bf}
+  .meter{height:5px;border-radius:3px;background:rgba(255,255,255,.18);overflow:hidden}
+  .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#9ff3cf,#fff);border-radius:3px;transition:width .06s}
+  .btn{height:42px;padding:0 22px;border:0;border-radius:999px;font:600 14px/1 inherit;font-family:inherit;color:#fff;cursor:pointer;
+    background:#17120f;box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px rgba(0,0,0,.3);transition:background .25s, transform .12s}
+  .btn:active{transform:scale(.97)}
+  .btn.on{background:#c2433f}
+  .hint{margin:10px 0 0 22px;font-size:12.5px;color:var(--sub);height:34px;overflow:hidden;line-height:1.35}
 
-  /* ---- glass pill buttons ---- */
-  .btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
-  @property --c1{syntax:'<color>';inherits:true;initial-value:transparent}
-  @property --c2{syntax:'<color>';inherits:true;initial-value:transparent}
-  @property --castc{syntax:'<color>';inherits:true;initial-value:transparent}
-  @property --caust{syntax:'<color>';inherits:true;initial-value:transparent}
-  @property --deep{syntax:'<color>';inherits:true;initial-value:transparent}
-  @property --edge{syntax:'<color>';inherits:true;initial-value:transparent}
-  .pill{position:relative;border:0;border-radius:999px;height:56px;font:600 16px/1 inherit;font-family:inherit;color:#fff;cursor:pointer;
-    text-shadow:0 1px 2px rgba(40,20,90,.35);transition:transform .12s, --c1 .35s, --c2 .35s, --castc .35s, --caust .35s, --deep .35s, --edge .35s;
-    background:linear-gradient(180deg,var(--c1),var(--c2));
-    box-shadow:
-      16px 20px 26px -12px var(--castc),            /* coloured shadow on the wall   */
-      4px 6px 14px -4px var(--caust),               /* light passing through the glass */
-      inset 0 0 0 1px rgba(255,255,255,.35),         /* hairline rim                  */
-      inset 0 2.5px 1.5px -.5px rgba(255,255,255,.95),/* sharp top-edge highlight     */
-      inset 0 -2px 1.5px -.5px rgba(255,255,255,.55),/* bottom-edge reflection        */
-      inset 0 0 7px 1.5px rgba(255,255,255,.38),     /* shine hugging the rim         */
-      inset 0 -10px 12px -8px var(--deep)}           /* depth at the bottom           */
-  .pill:active{transform:scale(.97)}
-  /* bright ring that only exists on the edge: sun catches top-left, colour bounces bottom-right */
-  .pill::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:2px;pointer-events:none;
-    background:linear-gradient(118deg,#fff 0,rgba(255,255,255,.75) 12%,rgba(255,255,255,0) 34%,rgba(255,255,255,0) 62%,var(--edge) 86%,#fff 100%);
-    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;
-    mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)}
-  /* thin inner refraction line, like the thickness of the glass */
-  .pill::after{content:"";position:absolute;inset:5px;border-radius:inherit;pointer-events:none;
-    border:1px solid rgba(255,255,255,.22);border-top-color:rgba(255,255,255,.05);border-left-color:rgba(255,255,255,.08);
-    box-shadow:inset 0 -3px 5px -2px rgba(255,255,255,.3)}
-  .primary{--c1:rgba(255,255,255,.96);--c2:rgba(232,240,252,.95);--castc:rgba(60,90,160,.38);--caust:rgba(120,170,255,.5);--deep:rgba(90,120,180,.28);--edge:rgba(120,170,255,.95);color:#173a8a;text-shadow:0 1px 0 rgba(255,255,255,.8)}
-  .primary.on{color:#fff;text-shadow:0 1px 2px rgba(120,20,60,.35);--c1:rgba(255,150,176,.9);--c2:rgba(238,96,134,.95);--castc:rgba(230,80,120,.55);--caust:rgba(255,160,190,.55);--deep:rgba(170,30,80,.45);--edge:rgba(255,214,226,.9)}
-  .secondary{--c1:rgba(126,224,212,.86);--c2:rgba(78,196,184,.94);--castc:rgba(50,170,160,.5);--caust:rgba(130,235,225,.6);--deep:rgba(14,110,104,.45);--edge:rgba(206,255,248,.95)}
-  .secondary:disabled{opacity:.8}
-
-  /* ---- presets: segmented glass tabs ---- */
-  .tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:6px;margin:10px -4px 0;border-radius:28px;
-    background:rgba(255,255,255,.28);box-shadow:inset 0 1px 3px rgba(60,50,90,.14), inset 0 0 0 1px rgba(255,255,255,.65)}
-  .tabs::-webkit-scrollbar{display:none}
-  .tab{flex:1 0 auto;position:relative;border:0;background:transparent;border-radius:999px;padding:12px 16px 14px;
-    font:600 14.5px/1 inherit;font-family:inherit;color:var(--ink);cursor:pointer;transition:background .2s,box-shadow .2s}
-  .tab.active{background:linear-gradient(180deg,#fff,#f3f0f7);
-    box-shadow:6px 9px 16px -6px rgba(72,62,104,.35), inset 0 0 0 1px rgba(255,255,255,.9)}
-  .tab.active::after{content:"";position:absolute;left:22%;right:22%;bottom:5px;height:3px;border-radius:2px;background:var(--violet)}
-
-  /* ---- sliders: glass pill track, white glass knob ---- */
-  .ctl{margin-top:18px}
-  .ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600}
-  .ctl label b{color:var(--violet);font-weight:650;font-size:14px}
-  .ctl .hint{margin:2px 0 0}
-  .ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-top:1px}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:32px;margin:8px 0 2px;border-radius:16px;outline:none;cursor:pointer;
-    background:linear-gradient(90deg,rgba(139,112,246,.92),rgba(184,140,240,.9) 60%,rgba(122,214,210,.92)) 0 0/var(--p,50%) 100% no-repeat, rgba(255,255,255,.38);
-    box-shadow:inset 0 1px 3px rgba(60,50,90,.2), inset 0 0 0 1px rgba(255,255,255,.7)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;
-    background:radial-gradient(circle at 35% 28%,#fff 0,#f6f3fa 55%,#ddd7e8 100%);
-    box-shadow:5px 7px 12px -2px rgba(60,50,90,.38), inset 0 0 0 1px rgba(255,255,255,.95)}
-  input[type=range]::-moz-range-thumb{width:32px;height:32px;border:0;border-radius:50%;
-    background:radial-gradient(circle at 35% 28%,#fff 0,#f6f3fa 55%,#ddd7e8 100%);box-shadow:5px 7px 12px -2px rgba(60,50,90,.38)}
-  input[type=range]::-moz-range-track{background:transparent}
-
-  /* ---- glass switch (kit toggle) ---- */
-  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px}
-  .row span{font-size:15px;font-weight:600}
-  .row small{display:block;font-size:12.5px;font-weight:400;color:var(--sub);margin-top:2px;line-height:1.35}
-  input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;position:relative;width:62px;height:34px;border-radius:17px;cursor:pointer;margin:0;
-    background:rgba(255,255,255,.32);transition:background .2s, box-shadow .2s;
-    box-shadow:inset 0 1px 3px rgba(60,50,90,.2), inset 0 0 0 1.5px rgba(255,255,255,.7)}
-  input[type=checkbox]::before{content:"";position:absolute;top:2px;left:2px;width:30px;height:30px;border-radius:50%;transition:transform .22s;
-    background:radial-gradient(circle at 35% 28%,#fff,#efebf5 60%,#dcd6e7);box-shadow:4px 6px 10px -2px rgba(60,50,90,.38)}
-  input[type=checkbox]:checked{background:linear-gradient(90deg,rgba(155,133,250,.35),rgba(110,215,205,.35));
-    box-shadow:inset 0 0 0 2px #a28ff8, inset 0 0 0 3.5px rgba(120,220,210,.55), 0 0 14px rgba(150,130,250,.35)}
-  input[type=checkbox]:checked::before{transform:translateX(28px)}
-
-  /* ---- mic picker: glass search-style pill ---- */
-  .field{display:flex;align-items:center;gap:10px;margin-top:10px;padding:0 16px;height:52px;border-radius:999px;
-    background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.5));
-    box-shadow:8px 12px 20px -10px rgba(72,62,104,.35), inset 0 0 0 1px rgba(255,255,255,.9)}
-  .field svg{flex:none}
-  .field select{flex:1;min-width:0;border:0;background:transparent;font:500 15px inherit;font-family:inherit;color:var(--ink);
-    -webkit-appearance:none;appearance:none;outline:none;height:100%}
-
-  details>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-  details>summary::-webkit-details-marker{display:none}
-  .chev{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;transition:transform .25s;
-    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.95),rgba(255,255,255,.4));
-    box-shadow:5px 7px 12px -4px rgba(72,62,104,.35), inset 0 0 0 1.5px rgba(160,140,250,.55)}
-  details[open] .chev{transform:rotate(90deg)}
-  .tips{font-size:12.5px;color:var(--sub);line-height:1.5;padding:4px 8px 0}
-  .tips b{color:var(--ink)}
-
-  #toast{position:fixed;z-index:9;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);max-width:90%;
-    padding:12px 16px;border-radius:18px;font-size:14px;display:none;color:var(--ink);
-    background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-    box-shadow:10px 14px 30px -10px rgba(72,62,104,.45), inset 0 0 0 1.5px rgba(240,100,130,.6)}
-
-  /* ---- orb = dark-mode switch (green badge = listening) ---- */
-  .orb{position:relative;border:0;padding:0;cursor:pointer;transition:transform .15s}
-  .orb:active{transform:scale(.92)}
-  .orb i{position:absolute;top:0;right:0;width:10px;height:10px;opacity:0;background:#4ad48a;box-shadow:0 0 0 2px rgba(255,255,255,.8),0 0 10px #4ad48a}
-  .orb.on i{opacity:1}
-  .orb .sun{display:none}
-  html.dark .orb .sun{display:block} html.dark .orb .moon{display:none}
-  .room,.frame,.glass,.tabs,.field{transition:background .35s, box-shadow .35s}
-
-  /* ---- dark mode: moonlit wall, neon glows, smoked glass ---- */
-  html.dark{--ink:#f4f1fc;--sub:#bcb7d0;--mute:#8f8aa6;--violet:#ab9aff;
-    --cast:22px 30px 46px -16px rgba(0,0,0,.65);background:#121226}
-  html.dark .room{background:
-      linear-gradient(112deg, rgba(150,170,255,0) 8%, rgba(150,172,255,.22) 22%, rgba(150,172,255,.05) 36%, rgba(150,172,255,0) 44%),
-      radial-gradient(75% 60% at -8% 34%, rgba(104,124,236,.6) 0, rgba(84,96,200,.22) 40%, rgba(84,96,200,0) 72%),
-      linear-gradient(128deg, rgba(0,0,0,0) 0 46%, rgba(4,4,16,.45) 62%, rgba(2,2,10,.85) 100%),
-      linear-gradient(100deg, #26274e 0, #1b1a3a 45%, #121226 100%)}
-  html.dark .room::after{mix-blend-mode:overlay;opacity:.35}
-  html.dark .spill{opacity:.55}
-  html.dark .s1{background:#8f4dff} html.dark .s2{background:#22cfc6} html.dark .s3{background:#ff4f9a}
-  html.dark .frame{background:
-      radial-gradient(40% 16% at 96% 99%, rgba(150,120,255,.4) 0, rgba(150,120,255,0) 100%),
-      linear-gradient(135deg, rgba(255,255,255,.10) 0, rgba(255,255,255,.015) 30%, rgba(255,255,255,0) 60%, rgba(255,255,255,.05) 100%);
-    box-shadow:38px 50px 70px -22px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.28),
-      inset 2px 2px 2px rgba(210,220,255,.55), inset -2px -3px 5px rgba(0,0,0,.4), inset 0 0 26px rgba(160,170,255,.08)}
-  html.dark .frame::before{opacity:.45}
-  html.dark .glass{background:linear-gradient(165deg,rgba(255,255,255,.13),rgba(255,255,255,.04));
-    box-shadow:var(--cast), inset 0 1px 1px rgba(255,255,255,.4), inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -10px 24px rgba(255,255,255,.03)}
-  html.dark .hero{background:linear-gradient(135deg,rgba(255,110,150,.34) 0%,rgba(178,104,240,.36) 38%,rgba(96,108,250,.36) 68%,rgba(46,200,196,.32) 100%)}
-  html.dark .hero::after{opacity:.6}
-  html.dark .meter{background:rgba(0,0,0,.32);box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.14)}
-  html.dark #hear.on{color:#62e6a0}
-  html.dark .tabs{background:rgba(0,0,0,.26);box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.12)}
-  html.dark .tab.active{background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.12));
-    box-shadow:6px 9px 16px -6px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.3)}
-  html.dark .tab.active::after{box-shadow:0 0 10px var(--violet)}
-  html.dark input[type=range]{
-    background:linear-gradient(90deg,rgba(139,112,246,.95),rgba(190,140,245,.92) 60%,rgba(96,220,212,.95)) 0 0/var(--p,50%) 100% no-repeat, rgba(0,0,0,.32);
-    box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.14)}
-  html.dark input[type=checkbox]{background:rgba(0,0,0,.32);box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1.5px rgba(255,255,255,.18)}
-  html.dark input[type=checkbox]:checked{background:linear-gradient(90deg,rgba(155,133,250,.5),rgba(80,215,205,.45));
-    box-shadow:inset 0 0 0 2px #a28ff8, inset 0 0 0 3.5px rgba(120,220,210,.5), 0 0 16px rgba(150,130,250,.55)}
-  html.dark .field{background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));
-    box-shadow:8px 12px 20px -10px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.2)}
-  html.dark .field svg, html.dark .chev svg{stroke:#d6d2e8}
-  html.dark .field select option{color:#1d1b24}
-  html.dark .chev, html.dark .orb{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.3),rgba(255,255,255,.06));
-    box-shadow:5px 7px 12px -4px rgba(0,0,0,.6), inset 0 0 0 1.5px rgba(170,150,255,.6), inset 0 0 0 3px rgba(110,220,210,.2)}
-  html.dark .primary{--castc:rgba(0,0,0,.6);--caust:rgba(120,170,255,.55)}
-  html.dark .primary.on{--castc:rgba(240,80,130,.7);--caust:rgba(255,130,170,.6)}
-  html.dark .secondary{--castc:rgba(40,190,180,.65);--caust:rgba(90,230,220,.6)}
-  html.dark #toast{background:rgba(34,32,58,.92)}
-
-  /* ---- "AI" Learn button: a light source sweeps the glass rim, splitting into colour ---- */
-  .pill.ai{color:#fff;text-shadow:none;
-    background:radial-gradient(120% 150% at 30% 0,rgba(70,70,92,.7),rgba(12,12,20,.94));
-    box-shadow:14px 18px 26px -12px rgba(30,24,60,.55), 0 0 0 5px rgba(255,255,255,.22), 0 0 0 6px rgba(255,255,255,.18),
-      inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
-  .pill.ai::before,.pill.ai::after{display:none}
+  /* Learn noise — dark glass pill, moving light ring (canvas) */
+  .pill{position:relative;border:0;cursor:pointer;font-family:inherit}
+  .pill.ai{margin-top:14px;width:100%;height:52px;border-radius:999px;color:#fff;font:600 15px/1 inherit;font-family:inherit;
+    background:radial-gradient(120% 150% at 30% 0,rgba(70,66,62,.7),rgba(14,12,10,.94));
+    box-shadow:0 14px 26px -12px rgba(30,20,10,.55), 0 0 0 5px rgba(255,255,255,.14), inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
   .pill.ai span{position:relative;z-index:2}
   .pill.ai canvas{position:absolute;left:-28px;top:-28px;pointer-events:none;width:calc(100% + 56px);height:calc(100% + 56px)}
   .pill.ai .ring{z-index:1}
   .pill.ai .bloom{z-index:-1;filter:blur(12px) saturate(1.4) brightness(1.7);opacity:.95}
-  .pill.ai:active{transform:none;filter:brightness(1.06)}
   .pill.ai:disabled{opacity:1}
-  html.dark .pill.ai{box-shadow:14px 18px 26px -12px rgba(0,0,0,.75), 0 0 0 5px rgba(255,255,255,.05), 0 0 0 6px rgba(255,255,255,.06),
-      inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
-  html.dark .pill.ai .bloom{opacity:1;filter:blur(13px) saturate(1.5) brightness(1.9)}
 
-  /* ---- the colour pools behind the clear glass drift around slowly (same colours) ---- */
-  .spill{will-change:transform}
-  .s1{width:300px;height:230px;right:-90px;top:46%;animation:roam1 19s ease-in-out infinite}
-  .s2{width:260px;height:200px;right:-30px;top:64%;animation:roam2 23s ease-in-out infinite}
-  .s3{width:260px;height:190px;left:-110px;bottom:2%;animation:roam3 27s ease-in-out infinite}
-  .s4{width:240px;height:180px;left:-90px;top:20%;background:#c48cf0;opacity:.35;animation:roam2 31s ease-in-out infinite reverse}
-  html.dark .s4{background:#8f4dff}
-  @keyframes roam1{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(-120px,-70px) scale(1.18)}50%{transform:translate(-200px,40px) scale(.92)}75%{transform:translate(-60px,110px) scale(1.1)}}
-  @keyframes roam2{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(-160px,60px) scale(1.15)}60%{transform:translate(-80px,-120px) scale(.9)}80%{transform:translate(40px,-40px) scale(1.08)}}
-  @keyframes roam3{0%,100%{transform:translate(0,0) scale(1)}35%{transform:translate(150px,-90px) scale(1.2)}70%{transform:translate(70px,-200px) scale(.95)}}
+  /* right: inner glass panel with four columns */
+  .panel{border-radius:22px;padding:22px 26px 20px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(18px,2.2vw,34px);
+    background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.20));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.8), inset 0 0 0 1px rgba(255,255,255,.35), 0 10px 30px -18px rgba(40,25,10,.35);
+    -webkit-backdrop-filter:blur(10px) saturate(1.2);backdrop-filter:blur(10px) saturate(1.2)}
+  html.dark .panel{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));box-shadow:inset 0 1px 0 rgba(255,235,210,.18), inset 0 0 0 1px rgba(255,235,210,.07)}
+  .col h4{margin:0 0 10px;font-size:12.5px;font-weight:500;color:var(--sub);letter-spacing:0}
+  #tabs{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-left:-10px}
+  .tab{position:relative;border:0;background:transparent;font:500 14.5px/1 inherit;font-family:inherit;color:var(--ink);
+    padding:7px 10px;border-radius:999px;transition:background .2s, box-shadow .2s;display:flex;align-items:center;gap:8px}
+  .tab:hover{background:rgba(255,255,255,.38);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75), 0 4px 10px -4px rgba(40,25,10,.3)}
+  html.dark .tab:hover{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.18)}
+  .tab.active::after{content:"On";font-size:10px;font-weight:600;color:#fff;background:var(--accent);padding:3px 7px;border-radius:999px;line-height:1}
 
-  /* ---- top card: its own gradient flows (same colours, mirrored so they loop seamlessly) ---- */
-  .hero{background-size:300% 300% !important;animation:heroflow 14s ease-in-out infinite alternate}
-  .hero{background-image:linear-gradient(135deg,rgba(255,196,196,.72) 0%,rgba(226,178,240,.66) 17%,rgba(172,180,250,.62) 33%,rgba(150,226,222,.62) 50%,rgba(172,180,250,.62) 67%,rgba(226,178,240,.66) 83%,rgba(255,196,196,.72) 100%)}
-  html.dark .hero{background-image:linear-gradient(135deg,rgba(255,110,150,.34) 0%,rgba(178,104,240,.36) 17%,rgba(96,108,250,.36) 33%,rgba(46,200,196,.32) 50%,rgba(96,108,250,.36) 67%,rgba(178,104,240,.36) 83%,rgba(255,110,150,.34) 100%)}
-  @keyframes heroflow{0%{background-position:0% 30%}50%{background-position:60% 70%}100%{background-position:100% 40%}}
-  @media (prefers-reduced-motion:reduce){.spill,.hero{animation:none}}
+  .ctl{margin:0 0 11px}
+  .ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;font-weight:500;margin-bottom:5px;gap:6px}
+  .ctl label b{font-weight:500;color:var(--sub);font-size:12px;white-space:nowrap}
+  .ctl .hint,.ctl .ends{display:none}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;
+    background:linear-gradient(90deg,var(--ink) 0 var(--p,50%),rgba(120,100,85,.28) var(--p,50%));}
+  html.dark input[type=range]::-webkit-slider-runnable-track{background:linear-gradient(90deg,#f3ede6 0 var(--p,50%),rgba(255,235,210,.14) var(--p,50%))}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-5.5px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#ece6df);box-shadow:0 2px 5px rgba(40,25,10,.35), inset 0 0 0 1px rgba(255,255,255,.9)}
+  input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:rgba(120,100,85,.28)}
+  input[type=range]::-moz-range-progress{height:5px;border-radius:3px;background:var(--ink)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(40,25,10,.35)}
+
+  .micsel{width:100%;margin-top:4px;padding:8px 12px;border-radius:12px;border:0;font:500 13px inherit;font-family:inherit;color:var(--ink);
+    background:rgba(255,255,255,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+  html.dark .micsel{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.14)}
+  .micsel option{color:#1e1915}
+
+  /* bottom row */
+  .bottom{margin-top:clamp(18px,3vh,30px);display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub)}
+  .bottom .l{display:flex;gap:22px;align-items:center}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9a9088;margin-right:7px;vertical-align:1px;transition:background .3s}
+  body.live .dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .bottom .r{display:flex;gap:18px;align-items:center}
+  .icons{display:flex;gap:4px;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6), 0 4px 12px -6px rgba(40,25,10,.3)}
+  html.dark .icons{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.14)}
+  .ico{position:relative;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--sub);transition:background .2s,color .2s}
+  .ico input{position:absolute;opacity:0;pointer-events:none}
+  .ico:hover{background:rgba(255,255,255,.4)} html.dark .ico:hover{background:rgba(255,255,255,.08)}
+  .ico:has(input:checked){color:var(--ink);background:rgba(255,255,255,.65);box-shadow:0 2px 6px -2px rgba(40,25,10,.35)}
+  html.dark .ico:has(input:checked){background:rgba(255,255,255,.16)}
+  .ico .tip{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:11.5px;padding:5px 9px;border-radius:8px;
+    background:rgba(20,16,13,.85);color:#fff;opacity:0;pointer-events:none;transition:opacity .15s}
+  .ico:hover .tip{opacity:1}
+  .evening{display:flex;align-items:center;gap:10px}
+  #orb{width:46px;height:26px;border-radius:999px;border:0;position:relative;padding:0;
+    background:rgba(255,255,255,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7), inset 0 1px 3px rgba(40,25,10,.2)}
+  #orb::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;transition:transform .3s;
+    background:radial-gradient(circle at 35% 30%,#fff,#e9e3dc);box-shadow:0 2px 5px rgba(40,25,10,.35)}
+  html.dark #orb{background:rgba(255,255,255,.10);box-shadow:inset 0 0 0 1px rgba(255,235,210,.2)}
+  html.dark #orb::after{transform:translateX(20px)}
+
+  /* giant glass wordmark, cut off by the bottom edge */
+  .word{margin-top:auto;padding-top:8px;position:relative;white-space:nowrap;text-align:center;
+    font-size:clamp(96px,14.6vw,300px);font-weight:800;letter-spacing:-.06em;line-height:.8;margin-bottom:-.17em;
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,.75)) drop-shadow(0 -1px 0 rgba(60,40,20,.25)) drop-shadow(0 14px 18px rgba(50,30,10,.28))}
+  .word span{display:inline-block;color:transparent;-webkit-background-clip:text;background-clip:text;
+    background:var(--room) center/cover fixed;-webkit-background-clip:text;
+    -webkit-text-stroke:1px rgba(255,255,255,.55)}
+  html.dark .word{filter:drop-shadow(0 1px 0 rgba(255,220,180,.35)) drop-shadow(0 14px 18px rgba(0,0,0,.5))}
+  html.dark .word span{-webkit-text-stroke:1px rgba(255,220,180,.22)}
+  .word::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(180deg,rgba(255,255,255,.0),rgba(255,255,255,.0) 40%,rgba(255,255,255,.06))}
+
+  /* glass droplet cursor + ripples */
+  #drop{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;pointer-events:none;z-index:50;
+    background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75) 0 3px,rgba(255,255,255,.15) 7px,rgba(255,255,255,.04) 60%),
+               radial-gradient(circle at 60% 75%,rgba(255,255,255,.25),transparent 55%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.7), inset 0 -5px 9px rgba(60,40,20,.25), 0 6px 14px rgba(40,25,10,.3);
+    transition:width .2s,height .2s,margin .2s;display:none}
+  @media (pointer:fine){ #drop{display:block} }
+  #drop.big{width:46px;height:46px;margin:-23px 0 0 -23px}
+  .ripple{position:absolute;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;pointer-events:none;
+    box-shadow:inset 0 0 26px 8px rgba(70,45,20,.16), 0 0 24px 6px rgba(255,255,255,.10), inset 0 0 0 1px rgba(255,255,255,.18);
+    animation:rip 1.5s cubic-bezier(.2,.7,.3,1) forwards}
+  html.dark .ripple{box-shadow:inset 0 0 26px 8px rgba(0,0,0,.3), 0 0 24px 6px rgba(255,220,170,.06)}
+  @keyframes rip{from{transform:scale(.06);opacity:.95}to{transform:scale(1);opacity:0}}
+
+  #toast{position:fixed;z-index:60;left:50%;top:18px;transform:translateX(-50%);padding:12px 16px;border-radius:14px;font-size:14px;display:none;
+    color:#fff;background:rgba(150,40,35,.9)}
+  @media (prefers-reduced-motion:reduce){ .ripple{display:none} }
 </style>
 </head>
 <body>
-<div class="room"></div>
-<div class="spill s1"></div><div class="spill s2"></div><div class="spill s3"></div><div class="spill s4"></div>
+<div id="room"></div>
 <div id="toast"></div>
+<div id="drop"></div>
 
-<div class="wrap"><div class="frame">
-  <header>
-    <div><h1>Pocket Reverb</h1><div class="tag">Live reverb for your guitar</div></div>
-    <button class="orb" id="orb" aria-label="Switch dark mode">
-      <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="#5d5a68"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
-      <svg class="sun" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#ffe7a8" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="#ffe7a8"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
-      <i></i></button>
-  </header>
+<section class="slab" id="slab">
+  <div class="inner">
+    <div class="top">
+      <div class="left">
+        <button class="brand reveal d1" id="brand" title="Replay"><span class="logo">PR</span>Pocket Reverb</button>
+        <div class="status fade reveal d1" id="status">Ready when you are</div>
+        <div class="field reveal d2">
+          <div class="lvl"><div class="row"><span>Input level</span><span id="hear">waiting</span></div><div class="meter"><i id="meterFill"></i></div></div>
+          <button class="btn" id="power"><span id="powerL" class="fade">Start</span></button>
+        </div>
+        <div class="hint fade reveal d2" id="statusHint">Put on headphones, then tap Start.</div>
+        <button class="pill ai reveal d3" id="learn"><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
+      </div>
 
-  <!-- play -->
-  <section class="glass hero lg">
-    <div class="status fade" id="status">Ready when you are</div>
-    <div class="hint fade" id="statusHint">Put on headphones, then tap Start.</div>
-    <div class="meter"><i id="meterFill"></i></div>
-    <div class="metarow"><span>Input level</span><b id="hear">● waiting</b></div>
-    <div class="btns">
-      <button class="pill primary" id="power"><span id="powerL" class="fade">Start</span></button>
-      <button class="pill ai" id="learn"><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
+      <div class="panel lg reveal d2">
+        <div class="col"><h4>Presets</h4><div id="tabs"></div></div>
+        <div class="col"><h4>Shape</h4><div id="shape"></div></div>
+        <div class="col"><h4>Noise</h4><div id="noise"></div>
+          <div class="ctl"><label>Microphone</label><select id="mic" class="micsel"><option value="">Default mic</option></select></div></div>
+        <div class="col"><h4>More</h4><div id="more"></div></div>
+      </div>
     </div>
-  </section>
 
-  <!-- presets -->
-  <section class="glass lg">
-    <div class="sec">Presets</div>
-    <div class="secsub">Pick a sound to start from.</div>
-    <div class="tabs" id="tabs"></div>
-  </section>
-
-  <!-- shape -->
-  <section class="glass lg">
-    <div class="sec">Shape your reverb</div>
-    <div id="shape"></div>
-  </section>
-
-  <!-- noise -->
-  <section class="glass lg">
-    <div class="sec">Background noise</div>
-    <div class="secsub">Tap <b>Learn noise</b> and stay quiet for 3 seconds first.</div>
-    <div id="noise"></div>
-    <div class="field">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-      <select id="mic"><option value="">Default mic (tap Start to see all)</option></select>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    <div class="bottom reveal d3">
+      <div class="l"><span>© 2026 Pocket Reverb</span><span><span class="dot"></span><span id="liveTxt">Mic off</span></span></div>
+      <div class="r">
+        <div class="icons">
+          <label class="ico"><input type="checkbox" id="focus"><span class="tip">Guitar focus</span>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 3l2 2-6.5 6.5"/><path d="M13.6 10.4a4 4 0 0 0-5.3.7c-.8 1-1 2.1-2.4 2.4C4 13.9 3 15.5 3 17a4 4 0 0 0 4 4c1.5 0 3.1-1 3.5-2.9.3-1.4 1.4-1.6 2.4-2.4a4 4 0 0 0 .7-5.3z"/><circle cx="9.5" cy="14.5" r="1"/></svg></label>
+          <label class="ico"><input type="checkbox" id="apple"><span class="tip">iPhone voice isolation</span>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 11v2"/></svg></label>
+          <label class="ico"><input type="checkbox" id="dry"><span class="tip">Hear my guitar too</span>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg></label>
+          <a class="ico" href="https://github.com/parthysarkar/Pocket_Reverb" target="_blank" rel="noopener"><span class="tip">Code on GitHub</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.9 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg></a>
+        </div>
+        <div class="evening"><span>Evening</span><button id="orb" aria-label="Evening mode"></button></div>
+      </div>
     </div>
-    <div class="row"><span>Guitar focus<small>Cuts low rumble and high hiss.</small></span><input type="checkbox" id="focus"></div>
-    <div class="row"><span>iPhone voice isolation<small>Apple's own noise removal. Strong, but can thin the guitar.</small></span><input type="checkbox" id="apple"></div>
-  </section>
 
-  <!-- more -->
-  <details class="glass lg" id="moreBox">
-    <summary><div><div class="sec">More sound options</div><div class="secsub" style="margin:0">Brightness, echo, mic boost</div></div>
-      <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></span></summary>
-    <div id="more"></div>
-    <div class="row"><span>Hear my guitar too<small>Only for an electric guitar plugged in.</small></span><input type="checkbox" id="dry"></div>
-  </details>
-
-  <div class="tips"><b>Best results:</b> phone 20–30 cm from the soundhole, <b>iPhone Microphone</b> selected, wired headphones on.</div>
-</div></div>
+    <div class="word reveal d4" aria-hidden="true"><span>Pocket Reverb</span></div>
+  </div>
+</section>
 
 <script>
+
 /*!
  * liquid-glass.js — Apple-style liquid glass refraction for any element.
  *
@@ -570,8 +451,60 @@
   global.liquidGlass = liquidGlass;
 })(window);
 
+
 </script>
 <script>
+/* ---------- a warm living room, drawn in code (day and evening) ---------- */
+function roomSVG(night){
+  const wallA=night?'#3a3029':'#efe7dc', wallB=night?'#221b16':'#d8ccbd', seam=night?'rgba(255,230,200,.05)':'rgba(255,255,255,.55)';
+  const wood=night?'#3b2516':'#7a5236', woodIn=night?'#20140c':'#4a301e', led=night?'#ffb35c':'#ffcf8a', ledA=night?.95:.6;
+  const tv=night?'#0b0a0a':'#1d1c1d', floorA=night?'#2a1d14':'#a9825f', floorB=night?'#160f0a':'#7b5a40';
+  const light=night?0:.55;
+  const shelf=(x,w,y0)=>{let o=`<rect x="${x-14}" y="${y0-14}" width="${w+28}" height="${560-y0+40}" fill="${wood}"/><rect x="${x}" y="${y0}" width="${w}" height="${560-y0}" fill="${woodIn}"/>`;
+    for(const y of [y0+120,y0+250,y0+380]){
+      o+=`<rect x="${x}" y="${y-60}" width="${w}" height="60" fill="url(#ledg)" opacity="${ledA}"/><rect x="${x}" y="${y}" width="${w}" height="12" fill="${wood}"/><rect x="${x}" y="${y}" width="${w}" height="3" fill="${led}" opacity="${ledA}"/>`; }
+    return o;};
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${wallB}"/><stop offset=".35" stop-color="${wallA}"/><stop offset=".75" stop-color="${wallA}"/><stop offset="1" stop-color="${wallB}"/></linearGradient>
+    <linearGradient id="ledg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${led}" stop-opacity=".9"/><stop offset="1" stop-color="${led}" stop-opacity="0"/></linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${floorA}"/><stop offset="1" stop-color="${floorB}"/></linearGradient>
+    <radialGradient id="sun" cx=".92" cy=".3" r=".6"><stop offset="0" stop-color="#fff" stop-opacity="${light}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="lamp" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${led}" stop-opacity="${night?.55:.0}"/><stop offset="1" stop-color="${led}" stop-opacity="0"/></radialGradient>
+    <linearGradient id="tvg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#wall)"/>
+  ${[160,520,800,1080,1440].map(x=>`<rect x="${x}" y="0" width="2" height="640" fill="${seam}"/>`).join('')}
+  ${shelf(300,190,40)}${shelf(1110,250,40)}
+  <!-- shelf objects -->
+  <ellipse cx="395" cy="135" rx="42" ry="38" fill="${night?'#d9cbb8':'#f3ede4'}"/><rect x="383" y="92" width="24" height="12" fill="${night?'#d9cbb8':'#f3ede4'}"/>
+  <rect x="325" y="245" width="10" height="45" fill="#e8e0d4"/><rect x="337" y="252" width="9" height="38" fill="#cfc4b4"/><rect x="348" y="248" width="11" height="42" fill="#efe7dc"/>
+  <rect x="1150" y="140" width="120" height="10" fill="#e9e1d4"/><rect x="1155" y="130" width="110" height="10" fill="#d5cab9"/><rect x="1160" y="121" width="100" height="9" fill="#f2ece2"/>
+  <path d="M1200 290 q-26 -6 -20 -40 q4 -20 14 -26 q-8 -14 4 -22 q14 -6 18 8 q4 12 -4 16 q14 8 14 26 q2 30 -26 38z" fill="#141210"/>
+  <rect x="1300" y="400" width="26" height="30" fill="#2a2420"/>
+  <!-- tv -->
+  <rect x="540" y="250" width="540" height="300" rx="4" fill="${tv}"/><rect x="540" y="250" width="540" height="300" fill="url(#tvg)"/>
+  <!-- sideboard + floor -->
+  <rect x="0" y="600" width="1600" height="400" fill="url(#floor)"/>
+  <rect x="200" y="560" width="1200" height="120" rx="6" fill="${night?'#3a281b':'#b9946f'}"/><rect x="200" y="560" width="1200" height="6" fill="${night?'#5a3e28':'#d7b896'}"/>
+  ${[0,1,2,3].map(i=>`<rect x="${230+i*295}" y="590" width="270" height="70" rx="4" fill="none" stroke="${night?'#2a1c12':'#a07c5a'}" stroke-width="2"/>`).join('')}
+  <ellipse cx="1180" cy="550" rx="40" ry="10" fill="#000" opacity=".25"/><path d="M1150 552 q30 -70 60 0z" fill="${night?'#4d3a2c':'#9b7b60'}"/>
+  <rect x="540" y="520" width="140" height="40" rx="3" fill="${night?'#2c2622':'#e4dccf'}"/>
+  <rect width="1600" height="1000" fill="url(#sun)"/>
+  <circle cx="1400" cy="430" r="380" fill="url(#lamp)"/><circle cx="250" cy="420" r="320" fill="url(#lamp)"/>
+  ${night?'<rect width="1600" height="1000" fill="#0d0a14" opacity=".25"/>':''}
+</svg>`;
+}
+function setRoom(){
+  const night=document.documentElement.classList.contains('dark');
+  document.documentElement.style.setProperty('--room',`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(roomSVG(night))}")`);
+}
+setRoom();
+new MutationObserver(setRoom).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+
+</script>
+<script>
+
 const $ = id => document.getElementById(id);
 
 const PRESETS = {
@@ -861,7 +794,7 @@ function stop(){
 function lightPoles(level, hearing){
   $('meterFill').style.width=Math.min(100,level*100)+'%';
   const h=$('hear'); h.classList.toggle('on',!!hearing);
-  h.textContent = !ctx ? '● waiting' : hearing ? '● hearing you' : '● quiet';
+  h.textContent = !ctx ? 'waiting' : hearing ? 'hearing you' : 'quiet';
 }
 function meterLoop(){
   const buf=new Float32Array(nodes.analyser.fftSize); let sm=0;
@@ -1032,6 +965,69 @@ markPreset('Reverb 1'); applyAll();
 document.querySelectorAll('.lg').forEach(c=>{
   try{ liquidGlass(c,{scale:-56, chroma:4, blur:12, saturate:1.4, fallbackBlur:14}); }catch(_){}
 });
+
+</script>
+<script>
+/* ---------- the slab rises with a liquid, wobbling top edge ---------- */
+const slab=$('slab');
+function rise(){
+  document.body.classList.remove('ready','up');
+  slab.style.transition='none';
+  const T=1700, t0=performance.now();
+  requestAnimationFrame(()=>document.body.classList.add('up'));
+  function f(now){
+    const p=Math.min(1,(now-t0)/T), e=1-Math.pow(1-p,3.2);
+    const w=slab.offsetWidth, h=slab.offsetHeight;
+    slab.style.transform=`translateY(${(1-e)*105}%)`;
+    const amp=34*Math.pow(1-p,1.6);                       // waves calm down as it settles
+    if(p<1){
+      const pts=[], N=48, k=now/1000;
+      for(let i=0;i<=N;i++){
+        const u=i/N;
+        const y=amp*(0.55+0.45*Math.sin(u*Math.PI*2.6+k*5.2)*Math.sin(u*Math.PI*1.3-k*2.1)+0.25*Math.sin(u*Math.PI*7-k*8));
+        pts.push(`${(u*w).toFixed(1)}px ${Math.max(0,y).toFixed(1)}px`);
+      }
+      slab.style.clipPath=`polygon(${pts.join(',')},${w}px ${h}px,0px ${h}px)`;
+      requestAnimationFrame(f);
+    } else {
+      slab.style.clipPath=''; slab.style.transform='translateY(0)';
+      document.body.classList.add('ready');
+    }
+    if(p>.55) document.body.classList.add('ready');
+  }
+  requestAnimationFrame(f);
+}
+$('brand').addEventListener('click',()=>{ slab.style.transform='translateY(105%)'; setTimeout(rise,350); });
+window.addEventListener('load',()=>setTimeout(rise,250));
+
+/* ---------- glass droplet cursor that leaves ripples in the glass ---------- */
+const drop=$('drop'); let lx=0, ly=0, lastRip=0;
+try{ liquidGlass(drop,{scale:-38,chroma:3,blur:0.5,saturate:1.3,radius:17,fallbackBlur:1}); }catch(_){}
+addEventListener('pointermove',e=>{
+  if(e.pointerType!=='mouse') return;
+  drop.style.transform=`translate(${e.clientX}px,${e.clientY}px)`;
+  drop.classList.toggle('big', !!e.target.closest('button,a,label,select,.tab'));
+  const now=performance.now(), d=Math.hypot(e.clientX-lx,e.clientY-ly);
+  if(now-lastRip>140 && d>14 && slab.contains(e.target)){
+    const r=slab.getBoundingClientRect(), el=document.createElement('div');
+    el.className='ripple'; el.style.left=(e.clientX-r.left)+'px'; el.style.top=(e.clientY-r.top)+'px';
+    slab.appendChild(el); setTimeout(()=>el.remove(),1600); lastRip=now;
+  }
+  lx=e.clientX; ly=e.clientY;
+});
+addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='mouse'||!slab.contains(e.target)) return;
+  const r=slab.getBoundingClientRect(), el=document.createElement('div');
+  el.className='ripple'; el.style.left=(e.clientX-r.left)+'px'; el.style.top=(e.clientY-r.top)+'px'; el.style.animationDuration='1.1s';
+  slab.appendChild(el); setTimeout(()=>el.remove(),1200);
+});
+
+/* status dot follows the mic */
+new MutationObserver(()=>{
+  const on=$('power').classList.contains('on');
+  document.body.classList.toggle('live',on); $('liveTxt').textContent=on?'Listening':'Mic off';
+}).observe($('power'),{attributes:true,attributeFilter:['class']});
+
 </script>
 </body>
 </html>

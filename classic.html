@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Reverb — live guitar reverb</title>
+<script>try{if(localStorage.getItem('pr_theme')==='dark')document.documentElement.classList.add('dark')}catch(_){}</script>
+<style>
+  :root{
+    --ink:#1d1b24; --sub:#5d5a68; --mute:#8a8695;
+    --violet:#7b63f2; --violet2:#9b85fa; --teal:#56c7bb; --teal2:#8be3d6;
+    --cast:22px 30px 46px -16px rgba(72,62,104,.38);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",sans-serif}
+  body{padding:max(18px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom))}
+
+  /* ---- room lighting: warm window light top-left, cool shadow falling diagonally ---- */
+  /* ---- sunlit wall: warm sun from the left, cool shadow in the top-right ---- */
+  .room{position:fixed;inset:0;z-index:-2;
+    background:
+      linear-gradient(112deg, rgba(255,247,230,0) 8%, rgba(255,246,226,.55) 22%, rgba(255,247,232,.12) 36%, rgba(255,247,232,0) 44%),
+      radial-gradient(75% 60% at -8% 34%, rgba(255,243,222,.98) 0, rgba(255,238,216,.6) 38%, rgba(255,238,216,0) 72%),
+      linear-gradient(128deg, rgba(0,0,0,0) 0 48%, rgba(74,82,112,.24) 60%, rgba(62,70,100,.55) 80%, rgba(54,62,92,.68) 100%),
+      radial-gradient(60% 40% at 100% 0, rgba(70,80,112,.55) 0, rgba(70,80,112,0) 75%),
+      linear-gradient(100deg, #f4e3d6 0, #ead8d0 42%, #d6c8cd 72%, #c2b8c6 100%)}
+  .room::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .5  0 0 0 0 .47  0 0 0 0 .5  0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .spill{position:fixed;z-index:-1;border-radius:50%;filter:blur(40px);opacity:.6;pointer-events:none}
+  .s1{width:200px;height:150px;right:-50px;top:54%;background:#c890f2}
+  .s2{width:170px;height:130px;right:10px;top:70%;background:#7fdcd8}
+  .s3{width:150px;height:90px;right:-30px;bottom:6%;background:#ffb39a;opacity:.5}
+
+  .wrap{max-width:440px;margin:0 auto}
+
+  /* ---- big outer glass sheet (like the kit's frame) ---- */
+  /* ---- clear, shiny back glass ---- */
+  .frame{position:relative;border-radius:36px;padding:22px 16px 18px;
+    background:
+      radial-gradient(40% 16% at 96% 99%, rgba(255,214,190,.5) 0, rgba(255,214,190,0) 100%),
+      linear-gradient(135deg, rgba(255,255,255,.20) 0, rgba(255,255,255,.03) 30%, rgba(255,255,255,0) 60%, rgba(255,255,255,.10) 100%);
+    box-shadow:
+      38px 50px 70px -22px rgba(52,48,88,.50),
+      14px 18px 22px -14px rgba(52,48,88,.30),
+      inset 0 0 0 1px rgba(255,255,255,.75),
+      inset 2px 2px 2px rgba(255,255,255,.95),
+      inset -2px -3px 5px rgba(96,104,150,.30),
+      inset 0 0 26px rgba(255,255,255,.16)}
+  .frame::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:
+      linear-gradient(118deg, rgba(255,255,255,.42) 0, rgba(255,255,255,.10) 9%, rgba(255,255,255,0) 17%),
+      linear-gradient(118deg, rgba(255,255,255,0) 56%, rgba(255,255,255,.14) 62%, rgba(255,255,255,0) 70%)}
+  .frame>*{position:relative}
+
+  header{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 18px}
+  h1{margin:0;font-size:27px;font-weight:700;letter-spacing:-.5px}
+  .tag{font-size:13px;color:var(--sub);margin-top:3px}
+  .orb{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.9),rgba(255,255,255,.25));
+    box-shadow:6px 9px 16px -4px rgba(72,62,104,.35), inset 0 0 0 1.5px rgba(160,140,250,.6), inset 0 0 0 3px rgba(130,220,210,.25)}
+  .orb i{width:8px;height:8px;border-radius:50%;background:#a7a2b5;transition:.2s}
+  .orb.on i{background:#4ad48a;box-shadow:0 0 10px #4ad48a}
+
+  /* ---- glass cards ---- */
+  .glass{position:relative;border-radius:28px;padding:18px 16px;margin-top:16px;
+    background:linear-gradient(165deg,rgba(255,255,255,.46),rgba(255,255,255,.16));
+    box-shadow:var(--cast), inset 0 1px 1px rgba(255,255,255,.95),
+      inset 0 0 0 1px rgba(255,255,255,.6), inset 0 -10px 24px rgba(255,255,255,.1);
+    -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+  .sec{font-size:17px;font-weight:650;letter-spacing:-.2px;margin:0 0 2px}
+  .secsub{font-size:13px;color:var(--sub);margin-bottom:6px}
+
+  /* iridescent hero card */
+  .hero{background:linear-gradient(135deg,rgba(255,196,196,.72) 0%,rgba(226,178,240,.66) 38%,rgba(172,180,250,.62) 68%,rgba(150,226,222,.62) 100%)}
+  .hero::after{content:"";position:absolute;z-index:-1;left:12%;right:-4%;bottom:-18px;height:46px;border-radius:50%;
+    background:linear-gradient(90deg,#f7a6c6,#b58cf4 45%,#7fd9e0);filter:blur(22px);opacity:.75}
+  .status{font-size:21px;font-weight:650;letter-spacing:-.3px;height:28px;line-height:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #statusHint{height:37px;overflow:hidden}
+  .fade{transition:opacity .18s ease}
+  .pill span{display:inline-block}
+  .hint{font-size:13px;color:var(--sub);margin-top:3px;line-height:1.4}
+  .meter{height:12px;border-radius:6px;margin:16px 0 4px;overflow:hidden;
+    background:rgba(255,255,255,.45);box-shadow:inset 0 1px 3px rgba(60,50,90,.18), inset 0 0 0 1px rgba(255,255,255,.7)}
+  .meter i{display:block;height:100%;width:0;border-radius:6px;transition:width .06s;
+    background:linear-gradient(90deg,#8b70f6,#c58cf0 55%,#7ad9d2);box-shadow:0 0 12px rgba(160,120,250,.8)}
+  .metarow{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
+  .metarow b{font-weight:600}
+  #hear.on{color:#1f9d5a}
+
+  /* ---- glass pill buttons ---- */
+  .btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  @property --c1{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --c2{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --castc{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --caust{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --deep{syntax:'<color>';inherits:true;initial-value:transparent}
+  @property --edge{syntax:'<color>';inherits:true;initial-value:transparent}
+  .pill{position:relative;border:0;border-radius:999px;height:56px;font:600 16px/1 inherit;font-family:inherit;color:#fff;cursor:pointer;
+    text-shadow:0 1px 2px rgba(40,20,90,.35);transition:transform .12s, --c1 .35s, --c2 .35s, --castc .35s, --caust .35s, --deep .35s, --edge .35s;
+    background:linear-gradient(180deg,var(--c1),var(--c2));
+    box-shadow:
+      16px 20px 26px -12px var(--castc),            /* coloured shadow on the wall   */
+      4px 6px 14px -4px var(--caust),               /* light passing through the glass */
+      inset 0 0 0 1px rgba(255,255,255,.35),         /* hairline rim                  */
+      inset 0 2.5px 1.5px -.5px rgba(255,255,255,.95),/* sharp top-edge highlight     */
+      inset 0 -2px 1.5px -.5px rgba(255,255,255,.55),/* bottom-edge reflection        */
+      inset 0 0 7px 1.5px rgba(255,255,255,.38),     /* shine hugging the rim         */
+      inset 0 -10px 12px -8px var(--deep)}           /* depth at the bottom           */
+  .pill:active{transform:scale(.97)}
+  /* bright ring that only exists on the edge: sun catches top-left, colour bounces bottom-right */
+  .pill::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:2px;pointer-events:none;
+    background:linear-gradient(118deg,#fff 0,rgba(255,255,255,.75) 12%,rgba(255,255,255,0) 34%,rgba(255,255,255,0) 62%,var(--edge) 86%,#fff 100%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0)}
+  /* thin inner refraction line, like the thickness of the glass */
+  .pill::after{content:"";position:absolute;inset:5px;border-radius:inherit;pointer-events:none;
+    border:1px solid rgba(255,255,255,.22);border-top-color:rgba(255,255,255,.05);border-left-color:rgba(255,255,255,.08);
+    box-shadow:inset 0 -3px 5px -2px rgba(255,255,255,.3)}
+  .primary{--c1:rgba(255,255,255,.96);--c2:rgba(232,240,252,.95);--castc:rgba(60,90,160,.38);--caust:rgba(120,170,255,.5);--deep:rgba(90,120,180,.28);--edge:rgba(120,170,255,.95);color:#173a8a;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+  .primary.on{color:#fff;text-shadow:0 1px 2px rgba(120,20,60,.35);--c1:rgba(255,150,176,.9);--c2:rgba(238,96,134,.95);--castc:rgba(230,80,120,.55);--caust:rgba(255,160,190,.55);--deep:rgba(170,30,80,.45);--edge:rgba(255,214,226,.9)}
+  .secondary{--c1:rgba(126,224,212,.86);--c2:rgba(78,196,184,.94);--castc:rgba(50,170,160,.5);--caust:rgba(130,235,225,.6);--deep:rgba(14,110,104,.45);--edge:rgba(206,255,248,.95)}
+  .secondary:disabled{opacity:.8}
+
+  /* ---- presets: segmented glass tabs ---- */
+  .tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;padding:6px;margin:10px -4px 0;border-radius:28px;
+    background:rgba(255,255,255,.28);box-shadow:inset 0 1px 3px rgba(60,50,90,.14), inset 0 0 0 1px rgba(255,255,255,.65)}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:1 0 auto;position:relative;border:0;background:transparent;border-radius:999px;padding:12px 16px 14px;
+    font:600 14.5px/1 inherit;font-family:inherit;color:var(--ink);cursor:pointer;transition:background .2s,box-shadow .2s}
+  .tab.active{background:linear-gradient(180deg,#fff,#f3f0f7);
+    box-shadow:6px 9px 16px -6px rgba(72,62,104,.35), inset 0 0 0 1px rgba(255,255,255,.9)}
+  .tab.active::after{content:"";position:absolute;left:22%;right:22%;bottom:5px;height:3px;border-radius:2px;background:var(--violet)}
+
+  /* ---- sliders: glass pill track, white glass knob ---- */
+  .ctl{margin-top:18px}
+  .ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600}
+  .ctl label b{color:var(--violet);font-weight:650;font-size:14px}
+  .ctl .hint{margin:2px 0 0}
+  .ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:32px;margin:8px 0 2px;border-radius:16px;outline:none;cursor:pointer;
+    background:linear-gradient(90deg,rgba(139,112,246,.92),rgba(184,140,240,.9) 60%,rgba(122,214,210,.92)) 0 0/var(--p,50%) 100% no-repeat, rgba(255,255,255,.38);
+    box-shadow:inset 0 1px 3px rgba(60,50,90,.2), inset 0 0 0 1px rgba(255,255,255,.7)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;border-radius:50%;
+    background:radial-gradient(circle at 35% 28%,#fff 0,#f6f3fa 55%,#ddd7e8 100%);
+    box-shadow:5px 7px 12px -2px rgba(60,50,90,.38), inset 0 0 0 1px rgba(255,255,255,.95)}
+  input[type=range]::-moz-range-thumb{width:32px;height:32px;border:0;border-radius:50%;
+    background:radial-gradient(circle at 35% 28%,#fff 0,#f6f3fa 55%,#ddd7e8 100%);box-shadow:5px 7px 12px -2px rgba(60,50,90,.38)}
+  input[type=range]::-moz-range-track{background:transparent}
+
+  /* ---- glass switch (kit toggle) ---- */
+  .row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px}
+  .row span{font-size:15px;font-weight:600}
+  .row small{display:block;font-size:12.5px;font-weight:400;color:var(--sub);margin-top:2px;line-height:1.35}
+  input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;position:relative;width:62px;height:34px;border-radius:17px;cursor:pointer;margin:0;
+    background:rgba(255,255,255,.32);transition:background .2s, box-shadow .2s;
+    box-shadow:inset 0 1px 3px rgba(60,50,90,.2), inset 0 0 0 1.5px rgba(255,255,255,.7)}
+  input[type=checkbox]::before{content:"";position:absolute;top:2px;left:2px;width:30px;height:30px;border-radius:50%;transition:transform .22s;
+    background:radial-gradient(circle at 35% 28%,#fff,#efebf5 60%,#dcd6e7);box-shadow:4px 6px 10px -2px rgba(60,50,90,.38)}
+  input[type=checkbox]:checked{background:linear-gradient(90deg,rgba(155,133,250,.35),rgba(110,215,205,.35));
+    box-shadow:inset 0 0 0 2px #a28ff8, inset 0 0 0 3.5px rgba(120,220,210,.55), 0 0 14px rgba(150,130,250,.35)}
+  input[type=checkbox]:checked::before{transform:translateX(28px)}
+
+  /* ---- mic picker: glass search-style pill ---- */
+  .field{display:flex;align-items:center;gap:10px;margin-top:10px;padding:0 16px;height:52px;border-radius:999px;
+    background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.5));
+    box-shadow:8px 12px 20px -10px rgba(72,62,104,.35), inset 0 0 0 1px rgba(255,255,255,.9)}
+  .field svg{flex:none}
+  .field select{flex:1;min-width:0;border:0;background:transparent;font:500 15px inherit;font-family:inherit;color:var(--ink);
+    -webkit-appearance:none;appearance:none;outline:none;height:100%}
+
+  details>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+  details>summary::-webkit-details-marker{display:none}
+  .chev{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;transition:transform .25s;
+    background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.95),rgba(255,255,255,.4));
+    box-shadow:5px 7px 12px -4px rgba(72,62,104,.35), inset 0 0 0 1.5px rgba(160,140,250,.55)}
+  details[open] .chev{transform:rotate(90deg)}
+  .tips{font-size:12.5px;color:var(--sub);line-height:1.5;padding:4px 8px 0}
+  .tips b{color:var(--ink)}
+
+  #toast{position:fixed;z-index:9;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);max-width:90%;
+    padding:12px 16px;border-radius:18px;font-size:14px;display:none;color:var(--ink);
+    background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    box-shadow:10px 14px 30px -10px rgba(72,62,104,.45), inset 0 0 0 1.5px rgba(240,100,130,.6)}
+
+  /* ---- orb = dark-mode switch (green badge = listening) ---- */
+  .orb{position:relative;border:0;padding:0;cursor:pointer;transition:transform .15s}
+  .orb:active{transform:scale(.92)}
+  .orb i{position:absolute;top:0;right:0;width:10px;height:10px;opacity:0;background:#4ad48a;box-shadow:0 0 0 2px rgba(255,255,255,.8),0 0 10px #4ad48a}
+  .orb.on i{opacity:1}
+  .orb .sun{display:none}
+  html.dark .orb .sun{display:block} html.dark .orb .moon{display:none}
+  .room,.frame,.glass,.tabs,.field{transition:background .35s, box-shadow .35s}
+
+  /* ---- dark mode: moonlit wall, neon glows, smoked glass ---- */
+  html.dark{--ink:#f4f1fc;--sub:#bcb7d0;--mute:#8f8aa6;--violet:#ab9aff;
+    --cast:22px 30px 46px -16px rgba(0,0,0,.65);background:#121226}
+  html.dark .room{background:
+      linear-gradient(112deg, rgba(150,170,255,0) 8%, rgba(150,172,255,.22) 22%, rgba(150,172,255,.05) 36%, rgba(150,172,255,0) 44%),
+      radial-gradient(75% 60% at -8% 34%, rgba(104,124,236,.6) 0, rgba(84,96,200,.22) 40%, rgba(84,96,200,0) 72%),
+      linear-gradient(128deg, rgba(0,0,0,0) 0 46%, rgba(4,4,16,.45) 62%, rgba(2,2,10,.85) 100%),
+      linear-gradient(100deg, #26274e 0, #1b1a3a 45%, #121226 100%)}
+  html.dark .room::after{mix-blend-mode:overlay;opacity:.35}
+  html.dark .spill{opacity:.55}
+  html.dark .s1{background:#8f4dff} html.dark .s2{background:#22cfc6} html.dark .s3{background:#ff4f9a}
+  html.dark .frame{background:
+      radial-gradient(40% 16% at 96% 99%, rgba(150,120,255,.4) 0, rgba(150,120,255,0) 100%),
+      linear-gradient(135deg, rgba(255,255,255,.10) 0, rgba(255,255,255,.015) 30%, rgba(255,255,255,0) 60%, rgba(255,255,255,.05) 100%);
+    box-shadow:38px 50px 70px -22px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.28),
+      inset 2px 2px 2px rgba(210,220,255,.55), inset -2px -3px 5px rgba(0,0,0,.4), inset 0 0 26px rgba(160,170,255,.08)}
+  html.dark .frame::before{opacity:.45}
+  html.dark .glass{background:linear-gradient(165deg,rgba(255,255,255,.13),rgba(255,255,255,.04));
+    box-shadow:var(--cast), inset 0 1px 1px rgba(255,255,255,.4), inset 0 0 0 1px rgba(255,255,255,.14), inset 0 -10px 24px rgba(255,255,255,.03)}
+  html.dark .hero{background:linear-gradient(135deg,rgba(255,110,150,.34) 0%,rgba(178,104,240,.36) 38%,rgba(96,108,250,.36) 68%,rgba(46,200,196,.32) 100%)}
+  html.dark .hero::after{opacity:.6}
+  html.dark .meter{background:rgba(0,0,0,.32);box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.14)}
+  html.dark #hear.on{color:#62e6a0}
+  html.dark .tabs{background:rgba(0,0,0,.26);box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.12)}
+  html.dark .tab.active{background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.12));
+    box-shadow:6px 9px 16px -6px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.3)}
+  html.dark .tab.active::after{box-shadow:0 0 10px var(--violet)}
+  html.dark input[type=range]{
+    background:linear-gradient(90deg,rgba(139,112,246,.95),rgba(190,140,245,.92) 60%,rgba(96,220,212,.95)) 0 0/var(--p,50%) 100% no-repeat, rgba(0,0,0,.32);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.14)}
+  html.dark input[type=checkbox]{background:rgba(0,0,0,.32);box-shadow:inset 0 1px 3px rgba(0,0,0,.5), inset 0 0 0 1.5px rgba(255,255,255,.18)}
+  html.dark input[type=checkbox]:checked{background:linear-gradient(90deg,rgba(155,133,250,.5),rgba(80,215,205,.45));
+    box-shadow:inset 0 0 0 2px #a28ff8, inset 0 0 0 3.5px rgba(120,220,210,.5), 0 0 16px rgba(150,130,250,.55)}
+  html.dark .field{background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.07));
+    box-shadow:8px 12px 20px -10px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.2)}
+  html.dark .field svg, html.dark .chev svg{stroke:#d6d2e8}
+  html.dark .field select option{color:#1d1b24}
+  html.dark .chev, html.dark .orb{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.3),rgba(255,255,255,.06));
+    box-shadow:5px 7px 12px -4px rgba(0,0,0,.6), inset 0 0 0 1.5px rgba(170,150,255,.6), inset 0 0 0 3px rgba(110,220,210,.2)}
+  html.dark .primary{--castc:rgba(0,0,0,.6);--caust:rgba(120,170,255,.55)}
+  html.dark .primary.on{--castc:rgba(240,80,130,.7);--caust:rgba(255,130,170,.6)}
+  html.dark .secondary{--castc:rgba(40,190,180,.65);--caust:rgba(90,230,220,.6)}
+  html.dark #toast{background:rgba(34,32,58,.92)}
+
+  /* ---- "AI" Learn button: a light source sweeps the glass rim, splitting into colour ---- */
+  .pill.ai{color:#fff;text-shadow:none;
+    background:radial-gradient(120% 150% at 30% 0,rgba(70,70,92,.7),rgba(12,12,20,.94));
+    box-shadow:14px 18px 26px -12px rgba(30,24,60,.55), 0 0 0 5px rgba(255,255,255,.22), 0 0 0 6px rgba(255,255,255,.18),
+      inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
+  .pill.ai::before,.pill.ai::after{display:none}
+  .pill.ai span{position:relative;z-index:2}
+  .pill.ai canvas{position:absolute;left:-28px;top:-28px;pointer-events:none;width:calc(100% + 56px);height:calc(100% + 56px)}
+  .pill.ai .ring{z-index:1}
+  .pill.ai .bloom{z-index:-1;filter:blur(12px) saturate(1.4) brightness(1.7);opacity:.95}
+  .pill.ai:active{transform:none;filter:brightness(1.06)}
+  .pill.ai:disabled{opacity:1}
+  html.dark .pill.ai{box-shadow:14px 18px 26px -12px rgba(0,0,0,.75), 0 0 0 5px rgba(255,255,255,.05), 0 0 0 6px rgba(255,255,255,.06),
+      inset 0 0 0 1px rgba(255,255,255,.08), inset 0 -8px 14px -8px rgba(0,0,0,.6)}
+  html.dark .pill.ai .bloom{opacity:1;filter:blur(13px) saturate(1.5) brightness(1.9)}
+
+  /* ---- the colour pools behind the clear glass drift around slowly (same colours) ---- */
+  .spill{will-change:transform}
+  .s1{width:300px;height:230px;right:-90px;top:46%;animation:roam1 19s ease-in-out infinite}
+  .s2{width:260px;height:200px;right:-30px;top:64%;animation:roam2 23s ease-in-out infinite}
+  .s3{width:260px;height:190px;left:-110px;bottom:2%;animation:roam3 27s ease-in-out infinite}
+  .s4{width:240px;height:180px;left:-90px;top:20%;background:#c48cf0;opacity:.35;animation:roam2 31s ease-in-out infinite reverse}
+  html.dark .s4{background:#8f4dff}
+  @keyframes roam1{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(-120px,-70px) scale(1.18)}50%{transform:translate(-200px,40px) scale(.92)}75%{transform:translate(-60px,110px) scale(1.1)}}
+  @keyframes roam2{0%,100%{transform:translate(0,0) scale(1)}30%{transform:translate(-160px,60px) scale(1.15)}60%{transform:translate(-80px,-120px) scale(.9)}80%{transform:translate(40px,-40px) scale(1.08)}}
+  @keyframes roam3{0%,100%{transform:translate(0,0) scale(1)}35%{transform:translate(150px,-90px) scale(1.2)}70%{transform:translate(70px,-200px) scale(.95)}}
+
+  /* ---- top card: its own gradient flows (same colours, mirrored so they loop seamlessly) ---- */
+  .hero{background-size:300% 300% !important;animation:heroflow 14s ease-in-out infinite alternate}
+  .hero{background-image:linear-gradient(135deg,rgba(255,196,196,.72) 0%,rgba(226,178,240,.66) 17%,rgba(172,180,250,.62) 33%,rgba(150,226,222,.62) 50%,rgba(172,180,250,.62) 67%,rgba(226,178,240,.66) 83%,rgba(255,196,196,.72) 100%)}
+  html.dark .hero{background-image:linear-gradient(135deg,rgba(255,110,150,.34) 0%,rgba(178,104,240,.36) 17%,rgba(96,108,250,.36) 33%,rgba(46,200,196,.32) 50%,rgba(96,108,250,.36) 67%,rgba(178,104,240,.36) 83%,rgba(255,110,150,.34) 100%)}
+  @keyframes heroflow{0%{background-position:0% 30%}50%{background-position:60% 70%}100%{background-position:100% 40%}}
+  @media (prefers-reduced-motion:reduce){.spill,.hero{animation:none}}
+</style>
+</head>
+<body>
+<div class="room"></div>
+<div class="spill s1"></div><div class="spill s2"></div><div class="spill s3"></div><div class="spill s4"></div>
+<div id="toast"></div>
+
+<div class="wrap"><div class="frame">
+  <header>
+    <div><h1>Pocket Reverb</h1><div class="tag">Live reverb for your guitar</div></div>
+    <button class="orb" id="orb" aria-label="Switch dark mode">
+      <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="#5d5a68"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+      <svg class="sun" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#ffe7a8" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="#ffe7a8"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+      <i></i></button>
+  </header>
+
+  <!-- play -->
+  <section class="glass hero lg">
+    <div class="status fade" id="status">Ready when you are</div>
+    <div class="hint fade" id="statusHint">Put on headphones, then tap Start.</div>
+    <div class="meter"><i id="meterFill"></i></div>
+    <div class="metarow"><span>Input level</span><b id="hear">● waiting</b></div>
+    <div class="btns">
+      <button class="pill primary" id="power"><span id="powerL" class="fade">Start</span></button>
+      <button class="pill ai" id="learn"><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
+    </div>
+  </section>
+
+  <!-- presets -->
+  <section class="glass lg">
+    <div class="sec">Presets</div>
+    <div class="secsub">Pick a sound to start from.</div>
+    <div class="tabs" id="tabs"></div>
+  </section>
+
+  <!-- shape -->
+  <section class="glass lg">
+    <div class="sec">Shape your reverb</div>
+    <div id="shape"></div>
+  </section>
+
+  <!-- noise -->
+  <section class="glass lg">
+    <div class="sec">Background noise</div>
+    <div class="secsub">Tap <b>Learn noise</b> and stay quiet for 3 seconds first.</div>
+    <div id="noise"></div>
+    <div class="field">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+      <select id="mic"><option value="">Default mic (tap Start to see all)</option></select>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="row"><span>Guitar focus<small>Cuts low rumble and high hiss.</small></span><input type="checkbox" id="focus"></div>
+    <div class="row"><span>iPhone voice isolation<small>Apple's own noise removal. Strong, but can thin the guitar.</small></span><input type="checkbox" id="apple"></div>
+  </section>
+
+  <!-- more -->
+  <details class="glass lg" id="moreBox">
+    <summary><div><div class="sec">More sound options</div><div class="secsub" style="margin:0">Brightness, echo, mic boost</div></div>
+      <span class="chev"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5d5a68" stroke-width="2.6" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></span></summary>
+    <div id="more"></div>
+    <div class="row"><span>Hear my guitar too<small>Only for an electric guitar plugged in.</small></span><input type="checkbox" id="dry"></div>
+  </details>
+
+  <div class="tips"><b>Best results:</b> phone 20–30 cm from the soundhole, <b>iPhone Microphone</b> selected, wired headphones on.</div>
+</div></div>
+
+<script>
+/*!
+ * liquid-glass.js — Apple-style liquid glass refraction for any element.
+ *
+ * Usage:
+ *   (include this file)
+ *   const glass = liquidGlass(document.querySelector('.my-card'), { scale: -112 });
+ *
+ * The module owns the SVG filter, displacement map, backdrop-filter wiring,
+ * resize handling, and the frosted-blur fallback for browsers that can't do
+ * SVG-filtered backdrops (Safari, Firefox). Visual dressing (tint, inner
+ * highlight, glare, shadows) stays in your CSS — see GLASS.md for the recipe.
+ *
+ * Technique per https://aave.com/design/building-glass-for-the-web and
+ * https://github.com/rizroze/liquid-glass
+ */
+(function (global) {
+  "use strict";
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  let uid = 0;
+  let svgDefs = null;
+
+  // Chromium can apply SVG filters via backdrop-filter; Safari and Firefox
+  // silently no-op, so they get the frosted fallback instead.
+  const supported = (() => {
+    const ua = navigator.userAgent;
+    const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
+    const isFirefox = /Firefox/.test(ua);
+    if (isSafari || isFirefox) return false;
+    if (!CSS.supports("backdrop-filter", "url(#lg)")) return false;
+    try {
+      const c = document.createElement("canvas");
+      c.width = c.height = 4;
+      c.getContext("2d").getImageData(0, 0, 1, 1);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  })();
+
+  function ensureDefs() {
+    if (svgDefs) return svgDefs;
+    const svg = document.createElementNS(SVG_NS, "svg");
+    // width/height 0 keeps it renderable (display:none would break feImage)
+    svg.setAttribute("width", "0");
+    svg.setAttribute("height", "0");
+    svg.setAttribute("aria-hidden", "true");
+    svg.style.position = "absolute";
+    svgDefs = document.createElementNS(SVG_NS, "defs");
+    svg.appendChild(svgDefs);
+    document.body.appendChild(svg);
+    return svgDefs;
+  }
+
+  // Displacement map, gradient-difference method: a red left->right ramp
+  // encodes X displacement, a blue top->bottom ramp encodes Y ("difference"
+  // keeps both since the channels are disjoint). A blurred, inset 50%-gray
+  // rounded rect neutralizes the interior, confining the refraction bulge to
+  // an edge band whose curvature is set by the blur radius.
+  function makeMap(w, h, radius, border, mapBlur) {
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+
+    const gx = ctx.createLinearGradient(0, 0, w, 0);
+    gx.addColorStop(0, "rgb(0,0,0)");
+    gx.addColorStop(1, "rgb(255,0,0)");
+    ctx.fillStyle = gx;
+    ctx.fillRect(0, 0, w, h);
+
+    const gy = ctx.createLinearGradient(0, 0, 0, h);
+    gy.addColorStop(0, "rgb(0,0,0)");
+    gy.addColorStop(1, "rgb(0,0,255)");
+    ctx.globalCompositeOperation = "difference";
+    ctx.fillStyle = gy;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.globalCompositeOperation = "source-over";
+    const inset = border * Math.min(w, h);
+    ctx.filter = "blur(" + mapBlur + "px)";
+    ctx.fillStyle = "rgba(128,128,128,0.93)";
+    ctx.beginPath();
+    ctx.roundRect(inset, inset, w - inset * 2, h - inset * 2,
+                  Math.max(radius - inset, 2));
+    ctx.fill();
+    ctx.filter = "none";
+    return canvas.toDataURL();
+  }
+
+  // Three displacement passes at staggered scales (R strongest), channels
+  // isolated with feColorMatrix and recombined with screen blends — the
+  // faint prism fringe at the rim.
+  function buildFilter(id, scales) {
+    const filter = document.createElementNS(SVG_NS, "filter");
+    filter.setAttribute("id", id);
+    filter.setAttribute("x", "0");
+    filter.setAttribute("y", "0");
+    filter.setAttribute("width", "100%");
+    filter.setAttribute("height", "100%");
+    // Load-bearing: filters default to linearRGB, which re-maps the map's
+    // neutral gray 128 to ~0.216 and injects a constant phantom displacement.
+    filter.setAttribute("color-interpolation-filters", "sRGB");
+
+    const feImage = document.createElementNS(SVG_NS, "feImage");
+    feImage.setAttribute("x", "0");
+    feImage.setAttribute("y", "0");
+    feImage.setAttribute("result", "map");
+    feImage.setAttribute("preserveAspectRatio", "none");
+    filter.appendChild(feImage);
+
+    const keep = [
+      "1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0",
+      "0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0",
+      "0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0",
+    ];
+    const channels = [];
+    for (let i = 0; i < 3; i++) {
+      const disp = document.createElementNS(SVG_NS, "feDisplacementMap");
+      disp.setAttribute("in", "SourceGraphic");
+      disp.setAttribute("in2", "map");
+      disp.setAttribute("scale", scales[i]);
+      disp.setAttribute("xChannelSelector", "R");
+      disp.setAttribute("yChannelSelector", "B");
+      disp.setAttribute("result", "d" + i);
+      filter.appendChild(disp);
+
+      const cm = document.createElementNS(SVG_NS, "feColorMatrix");
+      cm.setAttribute("in", "d" + i);
+      cm.setAttribute("type", "matrix");
+      cm.setAttribute("values", keep[i]);
+      cm.setAttribute("result", "c" + i);
+      filter.appendChild(cm);
+      channels.push("c" + i);
+    }
+
+    const blend1 = document.createElementNS(SVG_NS, "feBlend");
+    blend1.setAttribute("in", channels[0]);
+    blend1.setAttribute("in2", channels[1]);
+    blend1.setAttribute("mode", "screen");
+    blend1.setAttribute("result", "c01");
+    filter.appendChild(blend1);
+
+    const blend2 = document.createElementNS(SVG_NS, "feBlend");
+    blend2.setAttribute("in", "c01");
+    blend2.setAttribute("in2", channels[2]);
+    blend2.setAttribute("mode", "screen");
+    filter.appendChild(blend2);
+
+    ensureDefs().appendChild(filter);
+    return { filter, feImage };
+  }
+
+  function resolveRadius(el, w, h, override) {
+    if (override != null) return override;
+    const raw = getComputedStyle(el).borderTopLeftRadius || "0px";
+    const v = parseFloat(raw) || 0;
+    return raw.trim().endsWith("%") ? (v / 100) * Math.min(w, h) : v;
+  }
+
+  /**
+   * Apply liquid glass to an element.
+   *
+   * @param {Element} el
+   * @param {Object} [opts]
+   * @param {number} [opts.scale=-112]     Displacement strength (negative = magnifying bulge).
+   * @param {number} [opts.chroma=6]       Per-channel scale stagger; 0 disables the prism fringe.
+   * @param {number} [opts.border=0.07]    Neutral inset as a fraction of the smaller side.
+   * @param {number} [opts.mapBlur=12]     Edge-curvature softness (px) of the map's gray inset.
+   * @param {number} [opts.blur=3]         Backdrop blur (px) behind the glass interior.
+   * @param {number} [opts.saturate=1.5]   Backdrop saturation boost.
+   * @param {number} [opts.radius]         Corner radius override (px); default reads border-radius.
+   * @param {number} [opts.fallbackBlur=16] Frosted blur (px) where refraction is unsupported.
+   * @returns {{supported: boolean, refresh: Function, destroy: Function}}
+   */
+  function liquidGlass(el, opts) {
+    const o = Object.assign(
+      { scale: -112, chroma: 6, border: 0.07, mapBlur: 12,
+        blur: 3, saturate: 1.5, radius: null, fallbackBlur: 16 },
+      opts
+    );
+
+    if (!supported) {
+      const frosted = "blur(" + o.fallbackBlur + "px) saturate(" + o.saturate + ")";
+      el.style.backdropFilter = frosted;
+      el.style.webkitBackdropFilter = frosted;
+      el.classList.add("lg-fallback");
+      return { supported: false, refresh: function () {}, destroy: function () {
+        el.style.backdropFilter = "";
+        el.style.webkitBackdropFilter = "";
+        el.classList.remove("lg-fallback");
+      } };
+    }
+
+    const id = "lg-filter-" + (++uid);
+    const scales = [o.scale, o.scale + o.chroma, o.scale + 2 * o.chroma];
+    const parts = buildFilter(id, scales);
+
+    function refresh() {
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      if (!w || !h) return;
+      const radius = resolveRadius(el, w, h, o.radius);
+      parts.feImage.setAttribute("href", makeMap(w, h, radius, o.border, o.mapBlur));
+      parts.feImage.setAttribute("width", w);
+      parts.feImage.setAttribute("height", h);
+    }
+
+    refresh();
+    el.style.backdropFilter =
+      "url(#" + id + ") blur(" + o.blur + "px) saturate(" + o.saturate + ")";
+
+    let timer = null;
+    const ro = new ResizeObserver(function () {
+      clearTimeout(timer);
+      timer = setTimeout(refresh, 120);
+    });
+    ro.observe(el);
+
+    return {
+      supported: true,
+      refresh: refresh,
+      destroy: function () {
+        ro.disconnect();
+        clearTimeout(timer);
+        parts.filter.remove();
+        el.style.backdropFilter = "";
+      },
+    };
+  }
+
+  global.liquidGlass = liquidGlass;
+})(window);
+
+</script>
+<script>
+const $ = id => document.getElementById(id);
+
+const PRESETS = {
+  "Reverb 1":   {mix:15, decay:21, pre:40,  tone:6500, echo:0,  time:300, fb:0, vol:250},  // Parth's favourite
+  "Small room": {mix:35, decay:8,  pre:0,   tone:7000, echo:0,  time:120, fb:0},
+  "Big hall":   {mix:45, decay:30, pre:40,  tone:6500, echo:0,  time:300, fb:0},
+  "Church":     {mix:55, decay:60, pre:80,  tone:5000, echo:0,  time:420, fb:0},
+  "Dreamy":     {mix:65, decay:80, pre:150, tone:4500, echo:30, time:500, fb:50},
+  "Echo":       {mix:20, decay:10, pre:0,   tone:6000, echo:60, time:350, fb:35},
+  "Slapback":   {mix:15, decay:6,  pre:0,   tone:6000, echo:55, time:110, fb:10},
+};
+let state = {vol:250, ...PRESETS["Reverb 1"], gain:150, dry:false, gate:10, focus:true, nr:60, apple:false, mic:''};
+let ctx, stream, nodes = {}, irTimer, raf, measuring = null, noiseLearned = false;
+const gateThresh = v => Math.pow(v/100, 2) * 0.4;
+const nrWord = v => v===0?'Off': v<35?'Light': v<70?'Medium':'Strong';
+
+/* ---------- sliders ---------- */
+const SLIDERS = {
+  shape:[
+    {k:'pre',   min:0, max:500, step:5, t:'How soon it comes back', h:'Gap between plucking and hearing the reverb.', lo:'Right away', hi:'Half a second', f:v=> v===0?'right away':(v/1000).toFixed(2)+' s later'},
+    {k:'decay', min:3, max:80,  step:1, t:'How long it lasts', h:'How long the sound keeps ringing.', lo:'Short', hi:'Very long', f:v=>(v/10).toFixed(1)+' s'},
+    {k:'mix',   min:0, max:100, step:1, t:'How much reverb', lo:'A little', hi:'A lot', f:v=>v+'%'},
+    {k:'vol',   min:0, max:400, step:5, t:'Volume', lo:'Quiet', hi:'Loud', f:v=>v+'%'},
+  ],
+  noise:[
+    {k:'nr',    min:0, max:100, step:1, t:'Noise removal', h:'How hard to clean up background sound.', lo:'Off', hi:'Strong', f:nrWord},
+  ],
+  more:[
+    {k:'tone',  min:1500, max:12000, step:100, t:'Brightness', h:'Darker is warmer, brighter is sparkly.', lo:'Darker', hi:'Brighter', f:v=> v<4500?'dark':v<8000?'warm':'bright'},
+    {k:'echo',  min:0, max:100, step:1, t:'Echo amount', h:'Clear repeats of your notes.', f:v=> v? v+'%':'off'},
+    {k:'time',  min:60, max:900, step:10, t:'Gap between echoes', f:v=>(v/1000).toFixed(2)+' s'},
+    {k:'fb',    min:0, max:85, step:1, t:'Number of echoes', lo:'One', hi:'Many', f:v=>v+'%'},
+    {k:'gain',  min:0, max:600, step:5, t:'Mic boost', h:'Turn up if the level bar barely moves.', f:v=>v+'%'},
+    {k:'gate',  min:0, max:100, step:1, t:'Ignore very quiet sounds', h:'Lower this if soft notes get cut off.', f:v=> v? v+'%':'off'},
+  ],
+};
+const ALL = {}; const REVERB_KEYS = ['pre','decay','mix','tone','echo','time','fb'];
+for(const box in SLIDERS){
+  for(const s of SLIDERS[box]){
+    const d=document.createElement('div'); d.className='ctl';
+    d.innerHTML=`<label>${s.t} <b></b></label>${s.h?`<div class="hint">${s.h}</div>`:''}
+      <input type="range" min="${s.min}" max="${s.max}" step="${s.step}">
+      ${s.lo?`<div class="ends"><span>${s.lo}</span><span>${s.hi}</span></div>`:''}`;
+    $(box).appendChild(d);
+    s.inp=d.querySelector('input'); s.val=d.querySelector('b');
+    s.inp.addEventListener('input',()=>setVal(s.k,+s.inp.value));
+    ALL[s.k]=s;
+  }
+}
+
+/* ---------- presets ---------- */
+Object.keys(PRESETS).forEach(name=>{
+  const b=document.createElement('button'); b.className='tab'; b.textContent=name; b.dataset.name=name;
+  b.onclick=()=>choosePreset(name); $('tabs').appendChild(b);
+});
+
+/* ---------- status ---------- */
+/* change text with a soft fade instead of a pop */
+function fadeText(el, txt, instant){
+  if(instant){ clearTimeout(el._ft); el._ft=null; el.textContent=txt; el.style.opacity=1; return; }
+  if(el._ft){ el._next=txt; return; }
+  if(el.textContent===txt) return;
+  el._next=txt; el.style.opacity=0;
+  el._ft=setTimeout(()=>{ el._ft=null; el.textContent=el._next; el.style.opacity=1; },180);
+}
+let statusMsg='Ready when you are', roTimer=null;
+function setStatus(m, hint){
+  statusMsg=m; if(!roTimer) fadeText($('status'),m);
+  if(hint!==undefined) fadeText($('statusHint'),hint);
+}
+function flash(name,val){
+  // while a slider is moving, update instantly; fade only on the way in and out
+  fadeText($('status'), name+': '+val, !!roTimer);
+  clearTimeout(roTimer); roTimer=setTimeout(()=>{roTimer=null; fadeText($('status'),statusMsg);},1800);
+}
+function showErr(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',6000); }
+function setPower(on){
+  fadeText($('powerL'), on?'Stop':'Start');
+  $('power').classList.toggle('on',on);
+  $('orb').classList.toggle('on',on);
+  if(on) setStatus('Listening', 'Tap Learn noise and stay quiet for 3 seconds, then play.');
+  else { setStatus('Ready when you are', 'Put on headphones, then tap Start.'); fadeText($('learnL'),'Learn noise'); }
+}
+
+/* ---------- audio worklets ---------- */
+const WORKLETS = `
+/* Noise gate: lets sound through only while it is above the threshold */
+class Gate extends AudioWorkletProcessor{
+  static get parameterDescriptors(){return [{name:'threshold',defaultValue:0.004,minValue:0,maxValue:1}];}
+  constructor(){super();this.env=0;this.g=0;this.hold=0;}
+  process(ins,outs,p){
+    const inp=ins[0], out=outs[0]; if(!inp||!inp.length) return true;
+    const th=p.threshold[0], n=inp[0].length, sr=sampleRate;
+    const atk=1-Math.exp(-1/(sr*0.002)), rel=1-Math.exp(-1/(sr*0.15)), er=1-Math.exp(-1/(sr*0.02));
+    for(let i=0;i<n;i++){
+      const pk=Math.abs(inp[0][i]);
+      this.env = pk>this.env ? pk : this.env+(pk-this.env)*er;
+      if(this.env>th) this.hold=sr*0.15; else if(this.hold>0) this.hold--;
+      const t=(this.env>th||this.hold>0)?1:0;
+      this.g += (t-this.g)*(t>this.g?atk:rel);
+      for(let c=0;c<out.length;c++) out[c][i]=inp[0][i]*this.g;
+    }
+    return true;
+  }
+}
+registerProcessor('gate',Gate);
+
+/* Spectral noise removal: learns the room's noise "fingerprint" per frequency,
+   then subtracts it from every short slice of sound (FFT 1024, 75% overlap). */
+class Denoise extends AudioWorkletProcessor{
+  static get parameterDescriptors(){return [{name:'strength',defaultValue:0.6,minValue:0,maxValue:1}];}
+  constructor(){
+    super();
+    const N=this.N=1024, H=this.H=256, B=this.B=N/2+1;
+    this.win=new Float32Array(N);
+    for(let i=0;i<N;i++) this.win[i]=Math.sqrt(0.5-0.5*Math.cos(2*Math.PI*i/N));
+    this.fin=new Float32Array(N); this.ola=new Float32Array(N); this.outQ=new Float32Array(H);
+    this.re=new Float32Array(N); this.im=new Float32Array(N);
+    this.noise=new Float32Array(B); this.gs=new Float32Array(B).fill(1);
+    this.acc=new Float32Array(B); this.accN=0; this.learning=false; this.has=false; this.cnt=0;
+    this.rev=new Uint32Array(N); const bits=Math.log2(N);
+    for(let i=0;i<N;i++){let r=0;for(let b=0;b<bits;b++) r|=((i>>b)&1)<<(bits-1-b); this.rev[i]=r;}
+    this.cs=new Float32Array(N/2); this.sn=new Float32Array(N/2);
+    for(let i=0;i<N/2;i++){this.cs[i]=Math.cos(-2*Math.PI*i/N); this.sn[i]=Math.sin(-2*Math.PI*i/N);}
+    this.port.onmessage=e=>{
+      if(e.data==='learnStart'){this.acc.fill(0);this.accN=0;this.learning=true;}
+      if(e.data==='learnStop'){
+        this.learning=false;
+        if(this.accN>0){for(let k=0;k<this.B;k++) this.noise[k]=this.acc[k]/this.accN; this.has=true;}
+        this.port.postMessage({learned:this.has});
+      }
+    };
+  }
+  fft(re,im){
+    const N=this.N, rev=this.rev;
+    for(let i=0;i<N;i++){const j=rev[i]; if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t;}}
+    for(let s=2;s<=N;s<<=1){
+      const h=s>>1, step=N/s;
+      for(let i=0;i<N;i+=s){
+        for(let j=0;j<h;j++){
+          const wr=this.cs[j*step], wi=this.sn[j*step], a=i+j, b=a+h;
+          const tr=wr*re[b]-wi*im[b], ti=wr*im[b]+wi*re[b];
+          re[b]=re[a]-tr; im[b]=im[a]-ti; re[a]+=tr; im[a]+=ti;
+        }
+      }
+    }
+  }
+  frame(strength){
+    const N=this.N,B=this.B,re=this.re,im=this.im;
+    for(let i=0;i<N;i++){re[i]=this.fin[i]*this.win[i]; im[i]=0;}
+    this.fft(re,im);
+    const active = this.has && strength>0.001;
+    const over=1+3*strength, floor=0.3-0.27*strength;
+    for(let k=0;k<B;k++){
+      const mag=Math.hypot(re[k],im[k]);
+      if(this.learning) this.acc[k]+=mag;
+      let g=1;
+      if(active){
+        g=1-over*this.noise[k]/(mag+1e-9);
+        if(g<floor) g=floor;
+        if(g>this.gs[k]) this.gs[k]=g; else this.gs[k]+= (g-this.gs[k])*0.35;
+        g=this.gs[k];
+      }
+      re[k]*=g; im[k]*=g;
+      if(k>0&&k<N/2){re[N-k]*=g; im[N-k]*=g;}
+    }
+    if(this.learning) this.accN++;
+    for(let i=0;i<N;i++) im[i]=-im[i];
+    this.fft(re,im);
+    const sc=0.5/N;
+    for(let i=0;i<N;i++) this.ola[i]+=re[i]*this.win[i]*sc;
+    this.outQ.set(this.ola.subarray(0,this.H));
+    this.ola.copyWithin(0,this.H); this.ola.fill(0,N-this.H);
+    this.fin.copyWithin(0,this.H);
+  }
+  process(ins,outs,p){
+    const inp=ins[0], out=outs[0]; if(!inp||!inp.length) return true;
+    const x=inp[0], y=out[0], st=p.strength[0], N=this.N, H=this.H;
+    for(let i=0;i<x.length;i++){
+      this.fin[N-H+this.cnt]=x[i];
+      y[i]=this.outQ[this.cnt];
+      if(++this.cnt===H){this.cnt=0; this.frame(st);}
+    }
+    for(let c=1;c<out.length;c++) out[c].set(y);
+    return true;
+  }
+}
+registerProcessor('denoise',Denoise);`;
+
+/* ---------- reverb "room" sound ---------- */
+function buildIR(seconds){
+  const rate = ctx.sampleRate, len = Math.max(1, Math.floor(rate*seconds));
+  const ir = ctx.createBuffer(2, len, rate);
+  for(let ch=0; ch<2; ch++){
+    const d = ir.getChannelData(ch);
+    for(let i=0;i<len;i++){ const t=i/len; d[i]=(Math.random()*2-1)*Math.pow(1-t,3.2); }
+  }
+  return ir;
+}
+function refreshIR(){
+  clearTimeout(irTimer);
+  irTimer = setTimeout(()=>{ if(ctx) nodes.conv.buffer = buildIR(state.decay/10); }, 120);
+}
+
+async function listMics(){
+  try{
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+    const sel=$('mic'); sel.innerHTML='';
+    devs.forEach((d,i)=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||('Microphone '+(i+1));sel.appendChild(o);});
+    const cur=stream&&stream.getAudioTracks()[0].getSettings().deviceId;
+    if(cur) sel.value=cur;
+  }catch(e){}
+}
+
+/* ---------- audio graph ---------- */
+async function start(){
+  try{
+    ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+    stream = await navigator.mediaDevices.getUserMedia({audio:{
+      echoCancellation:state.apple, noiseSuppression:state.apple, autoGainControl:false, latency:0,
+      ...(state.mic ? {deviceId:{exact:state.mic}} : {})
+    }});
+  }catch(e){
+    if(state.mic && (e.name==='OverconstrainedError'||e.name==='NotFoundError')){
+      state.mic=''; try{localStorage.removeItem('pr_mic');}catch(_){}
+      if(ctx) ctx.close(); ctx=null; return start();
+    }
+    showErr(e.name==='NotAllowedError' ? 'Microphone permission was blocked. Allow it in Safari settings and try again.'
+          : 'Could not open the microphone: '+e.message);
+    stop(); return;
+  }
+  const n = nodes;
+  try{
+    const url = URL.createObjectURL(new Blob([WORKLETS],{type:'application/javascript'}));
+    await ctx.audioWorklet.addModule(url);
+    n.den  = new AudioWorkletNode(ctx,'denoise',{outputChannelCount:[1]});
+    n.gateNode = new AudioWorkletNode(ctx,'gate',{outputChannelCount:[1]});
+    n.den.port.onmessage = e => { if(e.data.learned!==undefined) noiseLearned = e.data.learned; };
+  }catch(e){
+    n.den = ctx.createGain(); n.gateNode = ctx.createGain(); n.noWorklet = true;
+  }
+  noiseLearned = false;
+
+  const src = ctx.createMediaStreamSource(stream);
+  n.gain = ctx.createGain();
+  n.hp = ctx.createBiquadFilter(); n.hp.type='highpass';
+  n.lp = ctx.createBiquadFilter(); n.lp.type='lowpass'; n.lp.Q.value=0.5;
+  n.analyser = ctx.createAnalyser(); n.analyser.fftSize=512;
+  n.dry = ctx.createGain();
+  n.pre = ctx.createDelay(1);
+  n.conv = ctx.createConvolver(); n.conv.buffer = buildIR(state.decay/10);
+  n.tone = ctx.createBiquadFilter(); n.tone.type='lowpass';
+  n.wet = ctx.createGain();
+  n.echoDelay = ctx.createDelay(2);
+  n.echoFb = ctx.createGain();
+  n.echoTone = ctx.createBiquadFilter(); n.echoTone.type='lowpass'; n.echoTone.frequency.value=3500;
+  n.echoOut = ctx.createGain();
+  n.master = ctx.createGain();
+  n.limiter = ctx.createDynamicsCompressor();
+  n.limiter.threshold.value=-3; n.limiter.ratio.value=20; n.limiter.attack.value=0.002; n.limiter.release.value=0.15;
+
+  // mic → boost → focus filters → noise removal → gate → reverb / echo → volume → limiter → out
+  src.connect(n.gain); n.gain.connect(n.hp); n.hp.connect(n.lp); n.lp.connect(n.den);
+  n.den.connect(n.analyser); n.den.connect(n.gateNode);
+  const g = n.gateNode;
+  g.connect(n.dry); n.dry.connect(n.master);
+  g.connect(n.pre); n.pre.connect(n.conv); n.conv.connect(n.tone); n.tone.connect(n.wet); n.wet.connect(n.master);
+  g.connect(n.echoDelay); n.echoDelay.connect(n.echoTone); n.echoTone.connect(n.echoFb); n.echoFb.connect(n.echoDelay);
+  n.echoTone.connect(n.echoOut); n.echoOut.connect(n.master); n.echoOut.connect(n.pre);
+  n.master.connect(n.limiter); n.limiter.connect(ctx.destination);
+
+  applyAll();
+  setPower(true);
+  if(n.noWorklet) showErr('Noise removal is not supported in this browser. Please update iOS.');
+  listMics(); meterLoop();
+}
+function stop(){
+  cancelAnimationFrame(raf);
+  if(stream) stream.getTracks().forEach(t=>t.stop());
+  if(ctx) ctx.close();
+  ctx=null; stream=null; nodes={}; noiseLearned=false;
+  setPower(false);
+  lightPoles(0,false);
+}
+
+/* level bar + "hearing you" */
+function lightPoles(level, hearing){
+  $('meterFill').style.width=Math.min(100,level*100)+'%';
+  const h=$('hear'); h.classList.toggle('on',!!hearing);
+  h.textContent = !ctx ? '● waiting' : hearing ? '● hearing you' : '● quiet';
+}
+function meterLoop(){
+  const buf=new Float32Array(nodes.analyser.fftSize); let sm=0;
+  const tick=()=>{
+    if(!nodes.analyser) return;
+    nodes.analyser.getFloatTimeDomainData(buf);
+    let peak=0; for(const v of buf) peak=Math.max(peak,Math.abs(v));
+    sm=Math.max(peak, sm*0.9);
+    lightPoles(sm*3, peak>gateThresh(state.gate));
+    if(measuring) measuring.max=Math.max(measuring.max,peak);
+    raf=requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+/* ---------- learn room noise ---------- */
+let learningNow=false;
+function learn(){
+  if(!ctx){ flash('First','tap Start'); return; }
+  if(nodes.noWorklet || learningNow) return;
+  learningNow=true; const b=$('learn'); b.disabled=true; b.classList.add('listening');
+  const L=$('learnL'); let left=3; fadeText(L,'Quiet… '+left); setStatus('Shh… stay quiet','Learning your room\'s background sound.');
+  const t=setInterval(()=>{ left--; if(left>0) fadeText(L,'Quiet… '+left,true); },1000);
+  nodes.den.port.postMessage('learnStart');
+  setTimeout(()=>{
+    if(!ctx){ clearInterval(t); learningNow=false; b.disabled=false; b.classList.remove('listening'); fadeText(L,'Learn noise'); return; }
+    nodes.den.port.postMessage('learnStop');
+    measuring={max:0};
+    setTimeout(()=>{
+      clearInterval(t); learningNow=false; b.disabled=false; b.classList.remove('listening'); fadeText(L,'Learn again');
+      if(!ctx || !measuring) return;
+      const th=Math.min(0.4,Math.max(0.0015,measuring.max*1.4));
+      state.gate=Math.min(100,Math.round(Math.sqrt(th/0.4)*100));
+      measuring=null; applyAll();
+      setStatus('Room noise learned ✓','Play away. Learn again if the room changes.');
+    },900);
+  },2000);
+}
+
+/* ---------- apply state to UI + audio ---------- */
+const ramp=(param,v)=>{ if(ctx) param.setTargetAtTime(v, ctx.currentTime, 0.03); };
+function applyAll(){
+  const s=state, n=nodes;
+  for(const k in ALL){
+    const c=ALL[k], f=(s[k]-c.min)/(c.max-c.min);
+    c.inp.value=s[k]; c.val.textContent=c.f(s[k]);
+    c.inp.style.setProperty('--p',`calc(16px + (100% - 32px) * ${f.toFixed(4)})`);
+  }
+  $('dry').checked=s.dry; $('focus').checked=s.focus; $('apple').checked=s.apple;
+  if(!ctx) return;
+  ramp(n.gain.gain, s.gain/100);
+  ramp(n.hp.frequency, s.focus?90:40);
+  ramp(n.lp.frequency, s.focus?6500:20000);
+  if(!n.noWorklet){
+    ramp(n.den.parameters.get('strength'), s.nr/100);
+    ramp(n.gateNode.parameters.get('threshold'), gateThresh(s.gate));
+  }
+  ramp(n.master.gain, s.vol/100);
+  ramp(n.wet.gain, (s.mix/100)*4);
+  ramp(n.pre.delayTime, s.pre/1000);
+  ramp(n.tone.frequency, s.tone);
+  ramp(n.echoOut.gain, s.echo/100);
+  ramp(n.echoDelay.delayTime, s.time/1000);
+  ramp(n.echoFb.gain, s.fb/100);
+  ramp(n.dry.gain, s.dry?1:0);
+}
+function setVal(k,v){
+  if(state[k]===v) return;
+  state[k]=v;
+  if(REVERB_KEYS.includes(k)) markPreset(null);
+  applyAll();
+  if(k==='decay') refreshIR();
+}
+function markPreset(name){ [...$('tabs').children].forEach(b=>b.classList.toggle('active', b.dataset.name===name)); }
+function choosePreset(name){
+  const old=state.decay; Object.assign(state,PRESETS[name]);
+  markPreset(name); applyAll(); if(state.decay!==old) refreshIR();
+  flash('Preset', name);
+}
+
+/* ---------- wiring ---------- */
+$('power').addEventListener('click',()=> ctx ? stop() : start());
+$('learn').addEventListener('click',learn);
+$('dry').addEventListener('change',e=>{state.dry=e.target.checked; applyAll();});
+$('focus').addEventListener('change',e=>{state.focus=e.target.checked; applyAll();});
+$('apple').addEventListener('change',async e=>{state.apple=e.target.checked; if(ctx){stop(); await start();}});
+$('mic').addEventListener('change',async e=>{
+  state.mic=e.target.value; try{localStorage.setItem('pr_mic',state.mic);}catch(_){}
+  if(ctx){stop(); await start();}
+});
+try{ state.mic=localStorage.getItem('pr_mic')||''; }catch(_){}
+$('orb').addEventListener('click',()=>{
+  const d=document.documentElement.classList.toggle('dark');
+  try{localStorage.setItem('pr_theme',d?'dark':'light');}catch(_){}
+});
+markPreset('Reverb 1'); applyAll();
+
+
+/* ---------- Learn button light: a moving light catches the glass rim and splits into colour ---------- */
+(function(){
+  const btn=$('learn'), ring=btn.querySelector('.ring'), bloom=btn.querySelector('.bloom');
+  const rc=ring.getContext('2d'), bc=bloom.getContext('2d'), M=28;
+  let W=0,H=0,D=1, pts=[];
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function layout(){
+    D=Math.min(3,devicePixelRatio||1); W=btn.offsetWidth; H=btn.offsetHeight; if(!W) return;
+    for(const c of [ring,bloom]){ c.width=(W+2*M)*D; c.height=(H+2*M)*D; }
+    // points around the pill outline, inset a little so the ring sits on the glass edge
+    const r=H/2-1.5, cx=M+W/2, cy=M+H/2, L=W-H, N=420; pts=[];
+    const per=2*L+2*Math.PI*r;
+    for(let i=0;i<N;i++){
+      let d=i/N*per, x,y;
+      if(d<L){ x=cx-L/2+d; y=cy-r; }
+      else if((d-=L)<Math.PI*r){ const a=-Math.PI/2+d/r; x=cx+L/2+Math.cos(a)*r; y=cy+Math.sin(a)*r; }
+      else if((d-=Math.PI*r)<L){ x=cx+L/2-d; y=cy+r; }
+      else { d-=L; const a=Math.PI/2+d/r; x=cx-L/2+Math.cos(a)*r; y=cy+Math.sin(a)*r; }
+      // lighting angle measured on a squashed circle so the light travels evenly round the pill
+      pts.push({x,y,phi:Math.atan2((y-cy), (x-cx)*(H/W)*1.6)});
+    }
+  }
+  new ResizeObserver(layout).observe(btn); layout();
+  const lobe=(d,k)=>Math.exp(-k*(1-Math.cos(d)));
+  let t=0, last=performance.now(), boost=0;
+  function frame(now){
+    const dt=Math.min(.05,(now-last)/1000); last=now;
+    const listening=btn.classList.contains('listening');
+    boost += ((listening?1:0)-boost)*Math.min(1,dt*4);
+    t += dt*(reduce?.15:1)*(1+boost*1.6);
+    if(W && pts.length){
+      const dark=true;
+      const w=2*Math.PI/4.2;
+      const a1=-1.25+1.25*Math.sin(w*t);                 // main light swings over the top
+      const a2=a1+Math.PI+0.7*Math.sin(w*1.7*t+1);        // reflected glint on the opposite side
+      const a3=w*0.62*t;                                  // a faint sheen that keeps travelling round
+      const I=phi=>1.05*lobe(phi-a1,6) + 0.6*lobe(phi-a2,14) + 0.35*lobe(phi-a3,22) + 0.25*boost*lobe(phi-a3*2.3,10);
+      const dl=0.17;                                      // colour split (dispersion)
+      rc.setTransform(D,0,0,D,0,0); rc.clearRect(0,0,W+2*M,H+2*M);
+      // the glass edge itself
+      rc.lineWidth=dark?1:1.4; rc.strokeStyle=dark?'rgba(255,255,255,.14)':'rgba(120,126,142,.55)';
+      rc.beginPath(); pts.forEach((p,i)=>i?rc.lineTo(p.x,p.y):rc.moveTo(p.x,p.y)); rc.closePath(); rc.stroke();
+      // soft reflection of the light on the inside of the glass
+      const hp=pts.reduce((b,p)=>I(p.phi)>I(b.phi)?p:b,pts[0]);
+      const g=rc.createRadialGradient(hp.x,hp.y,0,hp.x,hp.y,H*.9);
+      g.addColorStop(0,`rgba(255,250,240,${dark?.16:.22})`); g.addColorStop(1,'rgba(255,250,240,0)');
+      rc.save(); rc.beginPath(); pts.forEach((p,i)=>i?rc.lineTo(p.x,p.y):rc.moveTo(p.x,p.y)); rc.closePath(); rc.clip();
+      rc.fillStyle=g; rc.fillRect(0,0,W+2*M,H+2*M); rc.restore();
+      // the lit rim, colour by colour
+      rc.lineCap='round';
+      for(let i=0;i<pts.length;i++){
+        const p=pts[i], q=pts[(i+1)%pts.length], f=p.phi;
+        const R=I(f+dl)*1.1+I(f+2*dl)*.25, G=I(f)*.95, B=I(f-dl)*1.2+I(f-2*dl)*.35, m=Math.max(R,G,B);
+        if(m<.04) continue;
+        const k=dark?1.35:1.15;
+        let r=Math.min(1,R*k), gg=Math.min(1,G*k), b=Math.min(1,B*k);
+        if(!dark){ const lift=Math.min(1,m*1.4); r=r*.75+.08*(1-lift); gg=gg*.75+.08*(1-lift); b=b*.82+.12*(1-lift); } // keep colour visible on light glass
+        rc.strokeStyle=`rgba(${r*255|0},${gg*255|0},${b*255|0},${Math.min(1,m*1.25)})`;
+        rc.lineWidth=1+Math.min(1,m)*3.2;
+        rc.beginPath(); rc.moveTo(p.x,p.y); rc.lineTo(q.x,q.y); rc.stroke();
+      }
+      bc.setTransform(1,0,0,1,0,0); bc.clearRect(0,0,bloom.width,bloom.height); bc.drawImage(ring,0,0);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* liquid glass on each card (real refraction in Chrome, frosted blur on iPhone) */
+document.querySelectorAll('.lg').forEach(c=>{
+  try{ liquidGlass(c,{scale:-56, chroma:4, blur:12, saturate:1.4, fallbackBlur:14}); }catch(_){}
+});
+</script>
+</body>
+</html>
