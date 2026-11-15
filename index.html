@@ -56,13 +56,13 @@
   .brand{gap:12px}
   .by{font-weight:400;color:var(--sub)} .by b{font-weight:600;color:var(--ink)}
   .pick{position:relative;width:38px;height:38px;display:grid;place-items:center;flex:none}
-  .pick svg{position:relative;z-index:1;filter:drop-shadow(0 3px 4px rgba(10,60,40,.35))}
+  .pick svg{position:relative;z-index:1;filter:drop-shadow(0 3px 4px rgba(90,95,0,.4))}
   .pick i{position:absolute;left:50%;top:54%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;
-    border:1.5px solid rgba(31,157,108,.55);box-shadow:0 0 6px rgba(80,220,170,.25), inset 0 0 4px rgba(255,255,255,.4);
+    border:1.5px solid rgba(160,170,0,.7);box-shadow:0 0 6px rgba(235,247,1,.35), inset 0 0 4px rgba(255,255,255,.45);
     transform:scale(.3);opacity:0;animation:pickRip 3.6s cubic-bezier(.15,.6,.35,1) infinite}
   .pick i:nth-child(2){animation-delay:1.2s} .pick i:nth-child(3){animation-delay:2.4s}
   body.live .pick i{animation-duration:1.8s} body.live .pick i:nth-child(2){animation-delay:.6s} body.live .pick i:nth-child(3){animation-delay:1.2s}
-  html.dark .pick i{border-color:rgba(95,224,176,.55)}
+  html.dark .pick i{border-color:rgba(235,247,1,.6)}
   @keyframes pickRip{0%{transform:scale(.3);opacity:0}12%{opacity:.95}100%{transform:scale(1.75);opacity:0}}
   .status{margin:26px 0 0;font-size:clamp(30px,2.6vw,40px);line-height:1.08;font-weight:600;letter-spacing:-.04em;height:2.2em;overflow:hidden}
   .fade{transition:opacity .18s ease}
@@ -192,10 +192,11 @@
         <button class="brand reveal d1" id="brand" title="Replay the intro">
           <span class="pick"><i></i><i></i><i></i>
             <svg viewBox="0 0 40 44" width="30" height="33"><defs>
-              <linearGradient id="pickG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5fe0b0"/><stop offset=".55" stop-color="#1a9a6c"/><stop offset="1" stop-color="#0d6a4a"/></linearGradient>
-              <linearGradient id="pickS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
-              <path d="M20 42.5C14.5 37 2 23 2 12.5 2 5.5 9.5 1.5 20 1.5s18 4 18 11C38 23 25.5 37 20 42.5z" fill="url(#pickG)" stroke="rgba(255,255,255,.6)" stroke-width="1"/>
-              <path d="M8 9.5C10 6 14.5 4.5 20 4.5c4.5 0 8.5 1 11 3.2C24 6.5 14 7.5 8 9.5z" fill="url(#pickS)"/></svg></span>
+              <linearGradient id="pickG" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#f7ff7a"/><stop offset=".45" stop-color="#ebf701"/><stop offset="1" stop-color="#b8c200"/></linearGradient>
+              <radialGradient id="pickS" cx=".32" cy=".22" r=".55"><stop offset="0" stop-color="#fff" stop-opacity=".8"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+              <path id="pickPath" d="M20 42.4c-2 0-3.3-1.2-5-3.4C10.2 33 3.4 23.4 2.4 15.2 1.4 6.6 9.2 1.4 20 1.4s18.6 5.2 17.6 13.8c-1 8.2-7.8 17.8-12.6 23.8-1.7 2.2-3 3.4-5 3.4z" fill="url(#pickG)"/>
+              <path d="M20 42.4c-2 0-3.3-1.2-5-3.4C10.2 33 3.4 23.4 2.4 15.2 1.4 6.6 9.2 1.4 20 1.4s18.6 5.2 17.6 13.8c-1 8.2-7.8 17.8-12.6 23.8-1.7 2.2-3 3.4-5 3.4z" fill="url(#pickS)"/>
+              <path d="M20 42.4c-2 0-3.3-1.2-5-3.4C10.2 33 3.4 23.4 2.4 15.2 1.4 6.6 9.2 1.4 20 1.4s18.6 5.2 17.6 13.8c-1 8.2-7.8 17.8-12.6 23.8-1.7 2.2-3 3.4-5 3.4z" fill="none" stroke="rgba(120,125,0,.45)" stroke-width=".8"/></svg></span>
           <span class="by">Created by <b>Parth Sarkar</b></span></button>
         <div class="status fade reveal d1" id="status">Ready when you are</div>
         <div class="field reveal d2">
@@ -1111,7 +1112,10 @@ $('orb').addEventListener('click',()=>flash('Evening', document.documentElement.
     mk('feOffset',{in:'b',dx:-bl*1.1,dy:-bl*1.4,result:'o2'},bev);
     mk('feComposite',{in:'SourceAlpha',in2:'o2',operator:'out',result:'sh'},bev);
     mk('feFlood',{'flood-color':'#3a2614','flood-opacity':.42,result:'k'},bev); mk('feComposite',{in:'k',in2:'sh',operator:'in',result:'shC'},bev);
-    const m=mk('feMerge',{},bev); mk('feMergeNode',{in:'shC'},m); mk('feMergeNode',{in:'hiC'},m);
+    mk('feMorphology',{in:'SourceAlpha',operator:'erode',radius:Math.max(.8,fs*0.006),result:'er'},bev);
+    mk('feComposite',{in:'SourceAlpha',in2:'er',operator:'out',result:'rim'},bev);
+    mk('feFlood',{'flood-color':'#fff','flood-opacity':.6,result:'rw'},bev); mk('feComposite',{in:'rw',in2:'rim',operator:'in',result:'rimC'},bev);
+    const m=mk('feMerge',{},bev); mk('feMergeNode',{in:'shC'},m); mk('feMergeNode',{in:'hiC'},m); mk('feMergeNode',{in:'rimC'},m);
     const ds=mk('filter',{id:'wmShadow',x:-40,y:-40,width:W+80,height:H+80,filterUnits:'userSpaceOnUse'},defs);
     mk('feGaussianBlur',{in:'SourceAlpha',stdDeviation:fs*0.05,result:'b'},ds); mk('feOffset',{in:'b',dx:fs*0.03,dy:fs*0.05,result:'o'},ds);
     mk('feComponentTransfer',{in:'o'},ds).appendChild(mk('feFuncA',{type:'linear',slope:.35}));
@@ -1124,7 +1128,6 @@ $('orb').addEventListener('click',()=>flash('Evening', document.documentElement.
     imgA=mk('image',{preserveAspectRatio:'xMidYMid slice'},room); imgB=mk('image',{preserveAspectRatio:'xMidYMid slice',opacity:0},room);
     mk('rect',{x:0,y:0,width:W,height:H,fill:'url(#wmSheen)'},lens);                    // glass tint + sheen
     mk('text',{...tAttr,fill:'#fff',filter:'url(#wmBevel)',class:'bev'},svg).textContent=TEXT;       // bevelled edges
-    mk('text',{...tAttr,fill:'none',stroke:'rgba(255,255,255,.55)','stroke-width':1},svg).textContent=TEXT; // crisp rim
     built=true; place(); if(curUrl) setImg(curUrl,true);
   }
   // line the photo up with the real background, magnified a touch like thick glass
