@@ -15,7 +15,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pocket Reverb — live guitar reverb</title>
-<script>try{if(localStorage.getItem('pr_theme')==='dark')document.documentElement.classList.add('dark')}catch(_){}</script>
+<script>
+/* day/evening by the local clock: evening from 6 pm, day from 6 am. A manual switch holds until the next change-over. */
+(function(){ const d=new Date(), h=d.getHours(), night=h>=18||h<6, s=new Date(d); if(h<6) s.setDate(s.getDate()-1);
+  const period=s.toDateString()+(night?'-n':'-d'); let mode=night?'dark':'light';
+  try{ const o=JSON.parse(localStorage.getItem('pr_theme2')||'null'); if(o&&o.period===period) mode=o.mode; }catch(_){}
+  if(mode==='dark') document.documentElement.classList.add('dark'); window.__themePeriod=period; })();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -245,6 +251,15 @@
   .rsave{flex:none;height:36px;padding:0 16px;border:0;border-radius:999px;font:600 13px/1 inherit;font-family:inherit;cursor:pointer;color:#fff;background:linear-gradient(180deg,#43cf6c,#25a84d)}
   .rdel{flex:none;width:36px;height:36px;border-radius:50%;border:0;display:grid;place-items:center;cursor:pointer;color:var(--ink);background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
   html.dark .rdel{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.14)}
+  .pill.ai span{font-size:19px;font-weight:750;letter-spacing:.3px;text-shadow:0 1px 3px rgba(0,0,0,.55), 0 0 18px rgba(0,0,0,.3)}
+  /* gentle notice at the bottom (theme change, playback pause) */
+  .notice{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));z-index:60;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+    display:flex;align-items:center;gap:9px;max-width:min(92vw,520px);padding:11px 18px;border-radius:999px;font-size:14px;font-weight:500;color:#fff;
+    background:rgba(28,22,18,.72);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), 0 12px 30px -10px rgba(0,0,0,.5);transition:opacity .5s ease, transform .5s ease}
+  .notice.show{opacity:1;transform:translate(-50%,0)}
+  #dusk{position:fixed;inset:0;z-index:55;pointer-events:none;opacity:0;background:radial-gradient(120% 90% at 50% 30%,rgba(255,150,70,.35),rgba(20,10,30,.55));transition:opacity 1.2s ease}
+  #dusk.on{opacity:1}
   /* headphones warning */
   .warn{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 0;padding:11px 14px;border-radius:16px;font-size:12.5px;line-height:1.45;color:var(--ink);
     background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
@@ -269,7 +284,7 @@
 
   /* Learn noise — dark glass pill, moving light ring (canvas) */
   .pill{position:relative;border:0;cursor:pointer;font-family:inherit}
-  .pill.ai{margin-top:14px;width:100%;height:52px;border-radius:999px;color:#fff;font:600 15px/1 inherit;font-family:inherit;background:transparent;
+  .pill.ai{margin-top:14px;width:100%;height:56px;border-radius:999px;color:#fff;font:750 19px/1 inherit;letter-spacing:.3px;font-family:inherit;background:transparent;
     box-shadow:0 16px 28px -14px rgba(30,20,10,.55), 0 0 0 5px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(255,255,255,.18)}
   .pill.ai .lens{position:absolute;inset:0;z-index:0;border-radius:inherit;overflow:hidden}
   .pill.ai .lens svg{display:block;width:100%;height:100%}
@@ -436,6 +451,8 @@
 <body>
 <div id="room"><div class="bg"></div><div class="bg"></div></div>
 <div id="toast"></div>
+<div class="notice" id="notice" role="status"></div>
+<div id="dusk" aria-hidden="true"></div>
 <div id="drop"></div>
 
 <section class="slab" id="slab">
@@ -1118,7 +1135,7 @@ let hearUntil=0, hearShown='';
 function lightPoles(level, hearing){
   $('meterFill').style.width=Math.min(100,level*100)+'%';
   const now=performance.now(); if(hearing) hearUntil=now+5000;
-  const on=!!ctx && now<hearUntil, txt=!ctx?'waiting':on?'hearing you':'quiet';
+  const live=!!ctx && ctx.state==='running', on=live && now<hearUntil, txt=!ctx?'waiting':!live?'paused':on?'hearing you':'quiet';
   if(txt===hearShown) return; hearShown=txt;
   const h=$('hear'); h.classList.toggle('on',on); h.textContent=txt;
 }
@@ -1215,7 +1232,7 @@ $('mic').addEventListener('change',async e=>{
 try{ state.mic=localStorage.getItem('pr_mic')||''; }catch(_){}
 $('orb').addEventListener('click',()=>{
   const d=document.documentElement.classList.toggle('dark');
-  try{localStorage.setItem('pr_theme',d?'dark':'light');}catch(_){}
+  try{localStorage.setItem('pr_theme2',JSON.stringify({mode:d?'dark':'light',period:window.__themePeriod}));}catch(_){}
 });
 markPreset('Reverb 1'); applyAll();
 
@@ -1976,7 +1993,7 @@ showView(location.hash.slice(1),true);
   const N=32, bands=new Float32Array(N), sm=new Float32Array(N);
   function read(){
     bands.fill(0); let lv=0;
-    for(const [,a] of taps){
+    for(const [c0,a] of taps){ if(c0.state!=='running') continue;
       a.getByteFrequencyData(a._f); a.getFloatTimeDomainData(a._t);
       let r=0; for(let i=0;i<a._t.length;i++) r+=a._t[i]*a._t[i]; lv=Math.max(lv,Math.sqrt(r/a._t.length));
       const n=a._f.length;
@@ -2150,6 +2167,54 @@ showView(location.hash.slice(1),true);
   $('rDel').addEventListener('click',()=>{ discard(); flash('Recording','deleted'); });
   addEventListener('beforeunload',e=>{ if(blob||mr){ e.preventDefault(); e.returnValue=''; } });
   setInterval(setReady,1000);
+})();
+
+/* =====================================================================
+   Notices, automatic day/evening, and pausing the mic during playback
+   ===================================================================== */
+function notice(msg,ms=5000){
+  const n=$('notice'); n.textContent=msg; n.classList.add('show');
+  clearTimeout(n._t); n._t=setTimeout(()=>n.classList.remove('show'),ms);
+}
+(function(){
+  const periodNow=()=>{ const d=new Date(), h=d.getHours(), night=h>=18||h<6, s=new Date(d); if(h<6) s.setDate(s.getDate()-1); return {id:s.toDateString()+(night?'-n':'-d'), night}; };
+  function check(){
+    const p=periodNow(); if(p.id===window.__themePeriod) return;
+    window.__themePeriod=p.id;
+    try{ localStorage.removeItem('pr_theme2'); }catch(_){}          // a manual choice only lasts until the change-over
+    const dark=document.documentElement.classList.contains('dark');
+    if(dark===p.night) return;
+    // gentle change: warm dusk wash, switch underneath it, then fade it away
+    const dusk=$('dusk'); dusk.style.background=p.night?'':'radial-gradient(120% 90% at 50% 30%,rgba(255,240,210,.45),rgba(255,220,180,.25))';
+    dusk.classList.add('on');
+    setTimeout(()=>{ document.documentElement.classList.toggle('dark',p.night); },1200);
+    setTimeout(()=>dusk.classList.remove('on'),1700);
+    notice(p.night?'🌇  It’s getting dark outside — switching to evening mode':'🌅  Good morning — switching to day mode', 6000);
+  }
+  setInterval(check,30000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) check(); });
+})();
+
+/* while you listen back to a recording, the mic pauses so nothing interferes */
+(function(){
+  const au=$('rAudio'); let paused=false;
+  async function pauseMic(){
+    if(paused || typeof ctx==='undefined' || !ctx || ctx.state!=='running') return;
+    paused=true; try{ await ctx.suspend(); }catch(_){}
+    try{ hearUntil=0; hearShown='paused'; }catch(_){}
+    const h=$('hear'); h.classList.remove('on'); h.textContent='paused';
+    notice('Mic paused while you listen back',3000);
+  }
+  async function resumeMic(){
+    if(!paused) return; paused=false;
+    if(typeof ctx!=='undefined' && ctx && ctx.state==='suspended'){ try{ await ctx.resume(); }catch(_){} notice('Listening again',2000); }
+    try{ hearShown=''; }catch(_){}
+  }
+  au.addEventListener('play',pauseMic);
+  au.addEventListener('pause',resumeMic);
+  au.addEventListener('ended',resumeMic);
+  $('rSave').addEventListener('click',()=>{ au.pause(); resumeMic(); },true);
+  $('rDel').addEventListener('click',()=>{ resumeMic(); },true);
+  $('power').addEventListener('click',()=>{ if(paused){ paused=false; } },true);
 })();
 
 </script>
