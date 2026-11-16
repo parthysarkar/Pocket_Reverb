@@ -41,7 +41,7 @@
   #room .bg.show{opacity:1}
 
   /* ---------- the glass slab ---------- */
-  .slab{position:fixed;left:22px;right:22px;top:clamp(14px,calc(16vh - 56px),150px);bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-radius:34px;
+  .slab{position:fixed;left:22px;right:22px;top:clamp(4px,calc(16vh - 74px),132px);bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-radius:34px;
     transform:translateY(105%);will-change:transform;overflow:hidden;
     background:linear-gradient(180deg,var(--glass2),var(--glass) 40%);
     -webkit-backdrop-filter:blur(26px) saturate(1.25) brightness(1.04);backdrop-filter:blur(26px) saturate(1.25) brightness(1.04);
@@ -55,7 +55,10 @@
 
   .inner{position:relative;height:100%;padding:clamp(18px,3.6vh,34px) 40px 0;display:flex;flex-direction:column}
   .top,.bottom{position:relative;z-index:2}
-  :root{--vizH:clamp(46px,8vh,72px)}
+  :root{--vizH:clamp(30px,4.6vh,46px)}
+  .rim{position:absolute;left:0;top:0;width:100%;z-index:6;pointer-events:none}
+  .viz canvas{display:none}
+  .viz::after{display:none}
   .viz{position:relative;z-index:3;flex:none;height:var(--vizH);margin:-6px -40px 0;pointer-events:none;
     -webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
   .viz canvas{display:block;width:100%;height:100%}
@@ -64,7 +67,7 @@
   .viz::after{content:"";position:absolute;left:4%;right:4%;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)}
   .content{display:flex;flex-direction:column;position:relative;z-index:2;height:calc(100% - var(--wmH,160px) - var(--vizH) + 10px);min-height:0}
   .content>.head,.content>.bottom{flex:none}
-  .view.on{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+  .view.on{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding:0 16px;margin:0 -16px}
   .view.on::-webkit-scrollbar{display:none}
   #view-chords.on,#view-tuner.on{display:flex;flex-direction:column}
   #view-tuner.on{overflow:hidden}
@@ -230,7 +233,7 @@
   @media (min-width:761px) and (max-height:860px){ .warn .wl{display:none} .warn .ws{display:inline} .warn{margin-top:10px;padding:8px 12px} }
   @media (min-width:761px) and (max-height:700px){ #view-reverb #statusHint{display:none} }
   @media (min-width:761px) and (max-height:820px){
-    :root{--vizH:40px}
+    :root{--vizH:28px}
     #view-reverb .panel{padding:12px 20px 8px}
     #view-reverb .ctl{margin-bottom:4px} #view-reverb .ctl label{font-size:12.5px;margin-bottom:2px}
     #view-reverb input[type=range]{height:14px}
@@ -348,7 +351,7 @@
     .content{padding:22px 18px 22px;will-change:transform;
       -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 18px,#000 calc(100% - 0px));
       mask-image:linear-gradient(180deg,transparent 0,#000 18px,#000 100%)}
-    :root{--vizH:52px}
+    :root{--vizH:30px}
     .viz{position:absolute;left:0;right:0;top:0;margin:0}
     .clip{display:block;position:absolute;left:0;right:0;top:var(--vizH);bottom:var(--wmH,80px);overflow:hidden;
       -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 16px,#000 calc(100% - 26px),transparent 100%);
@@ -407,6 +410,7 @@
 <div id="drop"></div>
 
 <section class="slab" id="slab">
+  <canvas class="rim" id="rimC" aria-hidden="true"></canvas>
   <div class="inner">
     <div class="viz" id="viz" aria-hidden="true"><canvas id="vizC"></canvas></div>
     <div class="clip" id="clip"><div class="content" id="content">
@@ -1054,6 +1058,7 @@ async function start(){
   setPower(true);
   if(n.noWorklet) showErr('Noise removal is not supported in this browser. Please update iOS.');
   listMics(); meterLoop();
+  setTimeout(()=>{ if(ctx) learn(true); },300);          // learn the room straight away to stop feedback
 }
 function stop(){
   cancelAnimationFrame(raf);
@@ -1086,12 +1091,13 @@ function meterLoop(){
 
 /* ---------- learn room noise ---------- */
 let learningNow=false;
-function learn(){
+function learn(auto){
   if(!ctx){ flash('First','tap Start'); return; }
   if(nodes.noWorklet || learningNow) return;
   learningNow=true; const b=$('learn'); b.disabled=true; b.classList.add('listening');
-  const L=$('learnL'); let left=3; fadeText(L,'Quiet… '+left); setStatus('Shh… stay quiet','Learning your room\'s background sound.');
+  const L=$('learnL'); let left=3; fadeText(L,'Quiet… '+left); setStatus(auto?'Learning your room…':'Shh… stay quiet', auto?'Stay quiet for 3 seconds — this stops echo and feedback.':'Learning your room\'s background sound.');
   const t=setInterval(()=>{ left--; if(left>0) fadeText(L,'Quiet… '+left,true); },1000);
+  if(nodes.master) nodes.master.gain.setTargetAtTime(0,ctx.currentTime,.02);   // silent while listening to the room
   nodes.den.port.postMessage('learnStart');
   setTimeout(()=>{
     if(!ctx){ clearInterval(t); learningNow=false; b.disabled=false; b.classList.remove('listening'); fadeText(L,'Learn noise'); return; }
@@ -1264,7 +1270,7 @@ function rise(){
       slab.style.clipPath=`polygon(${pts.join(',')},${w}px ${h}px,0px ${h}px)`;
       requestAnimationFrame(f);
     } else {
-      slab.style.clipPath=''; slab.style.transform='translateY(0)'; window.__wmPlace&&window.__wmPlace(); window.learnLens&&learnLens.place();
+      slab.style.clipPath=''; slab.style.transform='translateY(0)'; window.__edgeStatic&&__edgeStatic(); window.__wmPlace&&window.__wmPlace(); window.learnLens&&learnLens.place();
       document.body.classList.add('ready');
     }
     if(p>.55) document.body.classList.add('ready');
@@ -1892,20 +1898,26 @@ $('tBtn').addEventListener('click',()=> tctx ? tunerStop() : tunerStart());
 showView(location.hash.slice(1),true);
 
 /* =====================================================================
-   Liquid glass visualizer: a strip of "water" across the top of the glass.
-   Calm ripples at rest; when sound plays (your guitar through the reverb,
-   chord previews, reference notes) the surface swells, waves follow the
-   frequencies and strong plucks drop ripple rings into it.
+   Living glass edge: the top edge of the main glass itself ripples with
+   the sound. Silent = a still, flat edge (no redraw cost). When you play,
+   the edge waves with your notes, strong plucks send ripples along it.
    ===================================================================== */
 (function(){
-  const cv=$('vizC'), g=cv.getContext('2d'); let W=0,H=0,D=1;
-  function size(){ D=Math.min(2,devicePixelRatio||1); W=cv.clientWidth; H=cv.clientHeight; cv.width=W*D; cv.height=H*D; }
-  new ResizeObserver(size).observe(cv); size();
-  const taps=new Map();                       // AudioContext -> analyser
+  const slab=$('slab'), cv=$('rimC'), g=cv.getContext('2d');
+  let W=0,H=0,D=1,R=34,Rb=0,AM=18, staticOn=false;
+  const compact=()=>matchMedia('(max-width:760px), (max-height:560px)').matches;
+  function size(){
+    W=slab.offsetWidth; H=slab.offsetHeight; D=Math.min(2,devicePixelRatio||1);
+    R=parseFloat(getComputedStyle(slab).borderTopLeftRadius)||34; Rb=compact()?R:0; AM=compact()?13:18;
+    cv.style.height=(AM*2+30)+'px'; cv.width=W*D; cv.height=(AM*2+30)*D; staticOn=false;
+  }
+  new ResizeObserver(size).observe(slab); size();
+  // --- sound sources ---
+  const taps=new Map();
   function tap(c,node){
     if(!c||!node||c.state==='closed') return;
     let a=taps.get(c); if(a && a._node===node) return;
-    a=c.createAnalyser(); a.fftSize=1024; a.smoothingTimeConstant=.72; a._node=node; a._f=new Uint8Array(a.frequencyBinCount); a._t=new Float32Array(a.fftSize);
+    a=c.createAnalyser(); a.fftSize=1024; a.smoothingTimeConstant=.6; a._node=node; a._f=new Uint8Array(a.frequencyBinCount); a._t=new Float32Array(a.fftSize);
     try{ node.connect(a); taps.set(c,a); }catch(_){}
   }
   function refreshTaps(){
@@ -1913,90 +1925,71 @@ showView(location.hash.slice(1),true);
     try{ if(typeof ctx!=='undefined' && ctx && nodes && nodes.limiter) tap(ctx,nodes.limiter); }catch(_){}
     try{ if(typeof pctx!=='undefined' && pctx && pbus) tap(pctx,pbus); }catch(_){}
   }
-  const N=64; const bands=new Float32Array(N), sm=new Float32Array(N);
-  let level=0, slow=0, t=0, last=performance.now(), drops=[];
-  const isDark=()=>document.documentElement.classList.contains('dark');
+  setInterval(refreshTaps,500); refreshTaps();
+  const N=32, bands=new Float32Array(N), sm=new Float32Array(N);
   function read(){
     bands.fill(0); let lv=0;
     for(const [,a] of taps){
       a.getByteFrequencyData(a._f); a.getFloatTimeDomainData(a._t);
       let r=0; for(let i=0;i<a._t.length;i++) r+=a._t[i]*a._t[i]; lv=Math.max(lv,Math.sqrt(r/a._t.length));
       const n=a._f.length;
-      for(let k=0;k<N;k++){            // log-spaced bands, 60 Hz – 8 kHz
-        const lo=Math.floor(Math.pow(n*0.007,1-k/N)*Math.pow(n*0.37,k/N)), hi=Math.max(lo+1,Math.floor(Math.pow(n*0.007,1-(k+1)/N)*Math.pow(n*0.37,(k+1)/N)));
-        let m=0; for(let i=lo;i<hi&&i<n;i++) m=Math.max(m,a._f[i]); bands[k]=Math.max(bands[k],m/255);
-      }
+      for(let k=0;k<N;k++){ const lo=Math.floor(Math.pow(n*.007,1-k/N)*Math.pow(n*.37,k/N)), hi=Math.max(lo+1,Math.floor(Math.pow(n*.007,1-(k+1)/N)*Math.pow(n*.37,(k+1)/N)));
+        let m=0; for(let i=lo;i<hi&&i<n;i++) m=Math.max(m,a._f[i]); bands[k]=Math.max(bands[k],m/255); }
     }
     return lv;
   }
-  let lastDraw=0;
+  // --- edge shape ---
+  let level=0, t=0, last=performance.now(), lastDraw=0, drops=[];
+  const bandAt=u=>{ const f=u*(N-1), i=Math.floor(f), w=f-i; return sm[i]*(1-w)+(sm[Math.min(N-1,i+1)]||0)*w; };
+  function edgeY(x){
+    const span=W-2*R; if(x<=R||x>=W-R) return AM;
+    const u=(x-R)/span, env=Math.pow(Math.sin(Math.PI*u),.7), amp=Math.min(1,level*1.7), b=bandAt(u);
+    let d=0;
+    d+= .55*Math.sin(u*Math.PI*3 - t*2.4);
+    d+= .55*b*Math.sin(u*Math.PI*10 + t*4.6);
+    d+= .25*Math.sin(u*Math.PI*17 - t*7.5)*amp;
+    for(const dr of drops){ const dx=(x-dr.x)/(30+dr.r); d+= dr.a*Math.cos(dx*2.2-dr.r*.05)*Math.exp(-dx*dx*.4); }
+    return AM + env*AM*amp*Math.max(-1,Math.min(1,d));
+  }
+  function pathD(flat){
+    const step=8; let d=`M0 ${H-Rb}`;
+    d+=` L0 ${AM+R} Q0 ${AM} ${R} ${AM}`;
+    for(let x=R;x<=W-R;x+=step) d+=` L${x.toFixed(1)} ${(flat?AM:edgeY(x)).toFixed(2)}`;
+    d+=` L${W-R} ${AM} Q${W} ${AM} ${W} ${AM+R} L${W} ${H-Rb}`;
+    if(Rb){ d+=` Q${W} ${H} ${W-Rb} ${H} L${Rb} ${H} Q0 ${H} 0 ${H-Rb}`; } else d+=` L${W} ${H} L0 ${H}`;
+    return d+' Z';
+  }
+  function drawRim(flat){
+    const hh=AM*2+30; g.setTransform(D,0,0,D,0,0); g.clearRect(0,0,W,hh);
+    g.beginPath();
+    g.moveTo(1,AM+R); g.quadraticCurveTo(1,AM+1,R,AM+1);
+    for(let x=R;x<=W-R;x+=6) g.lineTo(x,(flat?AM:edgeY(x))+1);
+    g.lineTo(W-R,AM+1); g.quadraticCurveTo(W-1,AM+1,W-1,AM+R);
+    const gr=g.createLinearGradient(0,0,W,0);
+    const a=flat?.75:Math.min(1,.8+level*.4);
+    gr.addColorStop(0,'rgba(255,255,255,.35)'); gr.addColorStop(.25,`rgba(255,255,255,${a})`); gr.addColorStop(.75,`rgba(255,255,255,${a})`); gr.addColorStop(1,'rgba(255,255,255,.35)');
+    g.strokeStyle=gr; g.lineWidth=flat?1.4:1.6+level*1.6;
+    g.shadowColor='rgba(255,245,230,.9)'; g.shadowBlur=flat?0:4+level*12; g.stroke(); g.shadowBlur=0;
+    // soft light caught just inside the edge
+    if(!flat){ g.globalAlpha=Math.min(.5,level*.8); g.lineWidth=8; g.strokeStyle='rgba(255,255,255,.35)'; g.filter='none'; g.stroke(); g.globalAlpha=1; }
+  }
+  function setStatic(){ slab.style.clipPath=`path('${pathD(true)}')`; drawRim(true); staticOn=true; }
   function frame(now){
     requestAnimationFrame(frame);
-    if(document.hidden || !W) return;
-    const busy=taps.size>0 && (level>.01 || drops.length);
-    if(now-lastDraw < (busy?15:100)) return;             // calm water doesn't need 60 fps
-    lastDraw=now;
-    const dt=Math.min(.08,(now-last)/1000); last=now; t+=dt;
-    const lv=taps.size?Math.min(1,read()*9):0;
-    const prev=level; level+= (lv-level)*(lv>level?.45:.08); slow+=(level-slow)*.03;
-    for(let k=0;k<N;k++) sm[k]+= (bands[k]-sm[k])*(bands[k]>sm[k]?.5:.1);
-    if(level-prev>.12 && level>.25 && drops.length<4) drops.push({x:W*(.15+Math.random()*.7),r:0,a:.9});
-    const dark=isDark(), mid=H*.55;
-    g.setTransform(D,0,0,D,0,0); g.clearRect(0,0,W,H);
-    const bandAt=x=>{ const f=x/W*(N-1), i=Math.floor(f), u=f-i; return sm[i]*(1-u)+(sm[Math.min(N-1,i+1)]||0)*u; };
-    // three liquid layers, back to front
-    const layers=[
-      {amp:.55, sp:.6, ph:0,   k:1.4, col:dark?'rgba(255,170,90,':'rgba(255,190,130,', fill:.20},
-      {amp:.8,  sp:-.9,ph:2.1, k:2.3, col:dark?'rgba(190,160,255,':'rgba(255,240,225,', fill:.22},
-      {amp:1,   sp:1.3,ph:4.2, k:3.1, col:'rgba(255,255,255,', fill:.30},
-    ];
-    for(const L of layers){
-      const base=1.6+slow*4, live=level*H*.42*L.amp;
-      g.beginPath();
-      for(let x=0;x<=W;x+=4){
-        const u=x/W, env=Math.sin(Math.PI*u);                 // calmer at the ends
-        const b=bandAt(x);
-        const y=mid
-          - env*(base*Math.sin(u*Math.PI*2*L.k + t*L.sp*2 + L.ph)
-          + live*(0.35+b*1.1)*Math.sin(u*Math.PI*2*(L.k+2) - t*(3+L.sp) + L.ph*1.7)
-          + live*0.4*b*Math.sin(u*Math.PI*14 + t*7));
-        x?g.lineTo(x,y):g.moveTo(x,y);
-      }
-      g.lineTo(W,H); g.lineTo(0,H); g.closePath();
-      const gr=g.createLinearGradient(0,mid-H*.4,0,H);
-      gr.addColorStop(0,L.col+(L.fill+level*.12)+')'); gr.addColorStop(1,L.col+'0)');
-      g.fillStyle=gr; g.fill();
-    }
-    // bright surface line on the front wave (the glass catching light), with a soft shadow beneath for depth
-    g.save(); g.translate(0,3); g.beginPath();
-    { const L=layers[2]; for(let x=0;x<=W;x+=4){ const u=x/W, env=Math.sin(Math.PI*u), b=bandAt(x), base=1.6+slow*4, live=level*H*.42;
-      const y=mid-env*(base*Math.sin(u*Math.PI*2*L.k+t*L.sp*2+L.ph)+live*(0.35+b*1.1)*Math.sin(u*Math.PI*2*(L.k+2)-t*(3+L.sp)+L.ph*1.7)+live*0.4*b*Math.sin(u*Math.PI*14+t*7));
-      x?g.lineTo(x,y):g.moveTo(x,y);} }
-    g.strokeStyle=dark?'rgba(0,0,0,.35)':'rgba(90,55,25,.18)'; g.lineWidth=2.4; g.stroke(); g.restore();
-    g.save(); g.globalCompositeOperation=dark?'lighter':'source-over';
-    g.beginPath();
-    const L=layers[2];
-    for(let x=0;x<=W;x+=3){
-      const u=x/W, env=Math.sin(Math.PI*u), b=bandAt(x), base=1.6+slow*4, live=level*H*.42;
-      const y=mid-env*(base*Math.sin(u*Math.PI*2*L.k+t*L.sp*2+L.ph)+live*(0.35+b*1.1)*Math.sin(u*Math.PI*2*(L.k+2)-t*(3+L.sp)+L.ph*1.7)+live*0.4*b*Math.sin(u*Math.PI*14+t*7));
-      x?g.lineTo(x,y):g.moveTo(x,y);
-    }
-    const sg=g.createLinearGradient(0,0,W,0);
-    sg.addColorStop(0,'rgba(255,255,255,0)'); sg.addColorStop(.5,`rgba(255,255,255,${.75+level*.25})`); sg.addColorStop(1,'rgba(255,255,255,0)');
-    g.strokeStyle=sg; g.lineWidth=1.6+level*1.4; g.shadowColor='rgba(255,240,220,.8)'; g.shadowBlur=level>.02?4+level*10:0; g.stroke();
-    g.restore();
-    // ripple rings dropped by strong plucks
-    drops=drops.filter(d=>d.a>.02);
-    for(const d of drops){
-      d.r+=dt*(140+W*.08); d.a*=Math.pow(.18,dt);
-      g.beginPath(); g.ellipse(d.x,mid,d.r,d.r*.16,0,0,Math.PI*2);
-      g.strokeStyle=`rgba(255,255,255,${d.a*.7})`; g.lineWidth=1.2; g.stroke();
-      g.beginPath(); g.ellipse(d.x,mid,d.r*.62,d.r*.1,0,0,Math.PI*2);
-      g.strokeStyle=`rgba(255,255,255,${d.a*.4})`; g.stroke();
-    }
+    if(document.hidden || !W || !document.body.classList.contains('ready')) { staticOn=false; return; }
+    const lv=taps.size?Math.min(1,read()*12):0;
+    for(let k=0;k<N;k++) sm[k]+= (bands[k]-sm[k])*(bands[k]>sm[k]?.6:.12);
+    const prev=level; level+=(lv-level)*(lv>level?.55:.07);
+    if(level-prev>.1 && level>.2 && drops.length<3) drops.push({x:R+Math.random()*(W-2*R),r:0,a:1});
+    const active=level>.008 || drops.length;
+    if(!active){ if(!staticOn) setStatic(); return; }
+    if(now-lastDraw<28) return;                         // ~35 fps while it moves
+    const dt=Math.min(.06,(now-last)/1000); last=now; lastDraw=now; t+=dt*(1+level*1.5);
+    drops=drops.filter(d=>(d.r+=dt*260, d.a*=Math.pow(.25,dt), d.a>.03));
+    slab.style.clipPath=`path('${pathD(false)}')`; drawRim(false); staticOn=false;
   }
-  setInterval(refreshTaps,500); refreshTaps();
   requestAnimationFrame(frame);
+  window.__edgeStatic=()=>{ staticOn=false; };
 })();
 
 </script>
