@@ -436,8 +436,8 @@
     .cleft,.tleft{min-width:0}
     .handwrap{width:92px}
     .gauge{width:100%}
-    .cgrid{max-height:none;overflow:visible;-webkit-mask-image:none;mask-image:none;grid-template-columns:repeat(3,1fr)}
-    .chord svg{width:96px}
+    .cgrid{max-height:none;overflow:visible;-webkit-mask-image:none;mask-image:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 4px;padding:4px 0 6px}
+    .chord{min-width:0;padding:6px 2px 10px} .chord svg{width:100%;max-width:96px;transform:translateX(-5%)} .chord .nm{font-size:26px}
     .str{height:60px}
     .status{font-size:30px;margin-top:18px;height:auto;min-height:1.15em}
     .hint{height:auto;min-height:18px}
@@ -1660,6 +1660,8 @@ function showView(v,fromHash){
   document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   if(!fromHash){ try{ history.replaceState(null,'',v==='reverb'?location.pathname:'#'+v); }catch(_){} }
   if(v!=='tuner' && window.tunerStop) tunerStop();
+  if(window.progStop) progStop();
+  if(window.pluckStop) pluckStop();
   if(window.__lockTop) __lockTop();
   dispatchEvent(new Event('resize'));
 }
@@ -1667,18 +1669,39 @@ document.querySelectorAll('#seg button').forEach(b=>b.addEventListener('click',(
 addEventListener('hashchange',()=>showView(location.hash.slice(1),true));
 
 /* ---------- a small plucked-string synth for chord previews and reference notes ---------- */
-let pctx=null, pbus=null;
+let pctx=null, pbus=null, pout=null, pconv=null, pwet=null, pir=null, pvoices=new Set();
 function pluckCtx(){
-  if(pctx) return pctx;
-  pctx=new (window.AudioContext||window.webkitAudioContext)();
+  if(pctx && pctx.state!=='closed') return pctx;
+  pctx=new (window.AudioContext||window.webkitAudioContext)(); pvoices=new Set();
   const comp=pctx.createDynamicsCompressor(); comp.threshold.value=-12; comp.ratio.value=6;
   const dry=pctx.createGain(); dry.gain.value=.85;
-  const conv=pctx.createConvolver(); const len=pctx.sampleRate*1.8, ir=pctx.createBuffer(2,len,pctx.sampleRate);
-  for(let c=0;c<2;c++){const d=ir.getChannelData(c); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}
-  conv.buffer=ir; const wet=pctx.createGain(); wet.gain.value=.22;
-  pbus=pctx.createGain(); pbus.connect(dry); pbus.connect(conv); conv.connect(wet);
-  dry.connect(comp); wet.connect(comp); comp.connect(pctx.destination);
+  const len=pctx.sampleRate*1.8; pir=pctx.createBuffer(2,len,pctx.sampleRate);
+  for(let c=0;c<2;c++){const d=pir.getChannelData(c); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}
+  pwet=pctx.createGain(); pwet.gain.value=.22;
+  pbus=pctx.createGain(); pbus.connect(dry);
+  pconv=pctx.createConvolver(); pconv.buffer=pir; pbus.connect(pconv); pconv.connect(pwet);
+  pout=pctx.createGain(); pout.gain.value=1;
+  dry.connect(comp); pwet.connect(comp); comp.connect(pout); pout.connect(pctx.destination);
   return pctx;
+}
+/* Wake the synth for a tap. iPhone Safari can leave it 'suspended' or 'interrupted'
+   (after the mic was used, a call, or the tab was in the background), and sometimes
+   it says 'running' while its clock is frozen. In those cases build a fresh one. */
+let pLastT=-1, pLastAt=0;
+async function pluckReady(){
+  let c=pluckCtx(); const now=performance.now();
+  const frozen = c.state==='running' && pLastT>=0 && now-pLastAt>400 && c.currentTime===pLastT;
+  if(c.state!=='running' && !frozen){
+    try{ await Promise.race([c.resume(), new Promise(r=>setTimeout(r,350))]); }catch(_){}
+  }
+  if(c.state!=='running' || frozen){
+    try{ c.close(); }catch(_){}
+    pctx=null; c=pluckCtx();
+    try{ await Promise.race([c.resume(), new Promise(r=>setTimeout(r,350))]); }catch(_){}
+  }
+  pLastT=c.currentTime; pLastAt=now;
+  try{ pout.gain.cancelScheduledValues(c.currentTime); pout.gain.setValueAtTime(1,c.currentTime); }catch(_){}
+  return c;
 }
 const midiHz=m=>440*Math.pow(2,(m-69)/12);
 function pluck(midi,when,len=2.4,vel=.22){
@@ -1690,13 +1713,23 @@ function pluck(midi,when,len=2.4,vel=.22){
   const g2=c.createGain(); g2.gain.value=.35;
   o1.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(pbus);
   o1.start(t); o2.start(t); o1.stop(t+len+.05); o2.stop(t+len+.05);
+  const v={o1,o2,g}; pvoices.add(v); o1.onended=()=>{ pvoices.delete(v); try{ g.disconnect(); }catch(_){} };
 }
 const OPEN=[40,45,50,55,59,64];              // E2 A2 D3 G3 B3 E4
-function strum(frets,when){
-  const c=pluckCtx(); if(c.state==='suspended') c.resume();
+async function strum(frets,when){
+  const c=await pluckReady();
   let t=when||c.currentTime+.02, k=0;
   frets.forEach((f,i)=>{ if(f<0) return; pluck(OPEN[i]+f,t+k*.032,2.6,.16); k++; });
 }
+/* Silence every ringing note and its reverb tail right now. */
+function pluckStop(){
+  if(!pctx || pctx.state==='closed') return;
+  const c=pctx, now=c.currentTime;
+  for(const v of pvoices){ try{ v.g.disconnect(); v.o1.stop(); v.o2.stop(); }catch(_){} }
+  pvoices.clear();
+  try{ pbus.disconnect(pconv); pconv.disconnect(); pconv=c.createConvolver(); pconv.buffer=pir; pbus.connect(pconv); pconv.connect(pwet); }catch(_){}
+}
+window.pluckStop=pluckStop;
 
 /* ---------- chord library ---------- */
 // frets low E → high e;  -1 = don't play, 0 = open.  Standard first-position / common barre shapes.
@@ -1829,10 +1862,12 @@ PROGS.forEach(([lab,ch])=>{
 });
 $('progForm').addEventListener('submit',e=>{ e.preventDefault(); setProgression($('progIn').value); });
 let progTimer=null;
+function progStop(){ if(progTimer){ clearTimeout(progTimer); progTimer=null; } const b=$('progPlay'); if(b) b.textContent='▶ Play progression'; document.querySelectorAll('#cgrid .play').forEach(c=>c.classList.remove('play')); }
+window.progStop=progStop;
 $('progPlay').addEventListener('click',()=>{
   if(!progList) return;
   const btn=$('progPlay');
-  if(progTimer){ clearTimeout(progTimer); progTimer=null; btn.textContent='▶ Play progression'; return; }
+  if(progTimer){ progStop(); pluckStop(); return; }
   let i=0; btn.textContent='■ Stop';
   const cards=()=>[...$('cgrid').children];
   const step=()=>{
@@ -1860,7 +1895,7 @@ const STRINGS=[{n:'E',m:40},{n:'A',m:45},{n:'D',m:50},{n:'G',m:55},{n:'B',m:59},
 STRINGS.forEach((s,i)=>{
   const b=document.createElement('button'); b.className='str'; b.dataset.i=i;
   b.innerHTML=`${s.n}<small>${(midiHz(s.m)).toFixed(0)} Hz</small>`;
-  b.onclick=()=>{ const c=pluckCtx(); if(c.state==='suspended') c.resume(); pluck(s.m,null,3.2,.24); lockString(i); };
+  b.onclick=async()=>{ lockString(i); await pluckReady(); pluck(s.m,null,3.2,.24); };
   $('tStrings').appendChild(b);
 });
 let lockedString=null;
@@ -1994,11 +2029,12 @@ showView(location.hash.slice(1),true);
    ===================================================================== */
 (function(){
   const slab=$('slab'), cv=$('rimC'), g=cv.getContext('2d');
-  let W=0,H=0,D=1,R=34,Rb=0,AM=18, staticOn=false;
+  let W=0,H=0,D=1,R=34,Rb=0,AM=18,FQ=1,DW=30, staticOn=false;
   const compact=()=>matchMedia('(max-width:760px), (max-height:560px)').matches;
   function size(){
     W=slab.offsetWidth; H=slab.offsetHeight; D=Math.min(2,devicePixelRatio||1);
     R=parseFloat(getComputedStyle(slab).borderTopLeftRadius)||34; Rb=compact()?R:0; AM=compact()?13:18;
+    FQ=Math.max(.34,Math.min(1,(W-2*R)/1100)); DW=compact()?46:30;
     cv.style.height=(AM*2+30)+'px'; cv.width=W*D; cv.height=(AM*2+30)*D; staticOn=false;
   }
   new ResizeObserver(size).observe(slab); size();
@@ -2035,16 +2071,17 @@ showView(location.hash.slice(1),true);
     const span=W-2*R; if(x<=R||x>=W-R) return AM;
     const u=(x-R)/span, env=Math.pow(Math.sin(Math.PI*u),.7), amp=Math.min(1,level*1.7), b=bandAt(u);
     let d=0;
-    d+= .55*Math.sin(u*Math.PI*3 - t*2.4);
-    d+= .55*b*Math.sin(u*Math.PI*10 + t*4.6);
-    d+= .25*Math.sin(u*Math.PI*17 - t*7.5)*amp;
-    for(const dr of drops){ const dx=(x-dr.x)/(30+dr.r); d+= dr.a*Math.cos(dx*2.2-dr.r*.05)*Math.exp(-dx*dx*.4); }
-    return AM + env*AM*amp*Math.max(-1,Math.min(1,d));
+    d+= .55*Math.sin(u*Math.PI*3*FQ - t*2.4);
+    d+= .55*b*Math.sin(u*Math.PI*10*FQ + t*4.6);
+    d+= .25*Math.sin(u*Math.PI*17*FQ - t*7.5)*amp;
+    for(const dr of drops){ const dx=(x-dr.x)/(DW+dr.r); d+= dr.a*Math.cos(dx*2.2-dr.r*.05)*Math.exp(-dx*dx*.4); }
+    return AM + env*AM*amp*Math.tanh(d*1.1);
   }
   function pathD(flat){
     const step=8; let d=`M0 ${H-Rb}`;
     d+=` L0 ${AM+R} Q0 ${AM} ${R} ${AM}`;
-    for(let x=R;x<=W-R;x+=step) d+=` L${x.toFixed(1)} ${(flat?AM:edgeY(x)).toFixed(2)}`;
+    if(flat) d+=` L${W-R} ${AM}`;
+    else{ let px=R, py=AM; for(let x=R+step;x<=W-R;x+=step){ const y=edgeY(x), mx=(px+x)/2, my=(py+y)/2; d+=` Q${px.toFixed(1)} ${py.toFixed(2)} ${mx.toFixed(1)} ${my.toFixed(2)}`; px=x; py=y; } d+=` L${W-R} ${AM}`; }
     d+=` L${W-R} ${AM} Q${W} ${AM} ${W} ${AM+R} L${W} ${H-Rb}`;
     if(Rb){ d+=` Q${W} ${H} ${W-Rb} ${H} L${Rb} ${H} Q0 ${H} 0 ${H-Rb}`; } else d+=` L${W} ${H} L0 ${H}`;
     return d+' Z';
@@ -2053,7 +2090,8 @@ showView(location.hash.slice(1),true);
     const hh=AM*2+30; g.setTransform(D,0,0,D,0,0); g.clearRect(0,0,W,hh);
     g.beginPath();
     g.moveTo(1,AM+R); g.quadraticCurveTo(1,AM+1,R,AM+1);
-    for(let x=R;x<=W-R;x+=6) g.lineTo(x,(flat?AM:edgeY(x))+1);
+    if(!flat){ let px=R, py=AM+1; for(let x=R+8;x<=W-R;x+=8){ const y=edgeY(x)+1, mx=(px+x)/2, my=(py+y)/2; g.quadraticCurveTo(px,py,mx,my); px=x; py=y; } }
+    g.lineJoin='round'; g.lineCap='round';
     g.lineTo(W-R,AM+1); g.quadraticCurveTo(W-1,AM+1,W-1,AM+R);
     const gr=g.createLinearGradient(0,0,W,0);
     const a=flat?.75:Math.min(1,.8+level*.4);
