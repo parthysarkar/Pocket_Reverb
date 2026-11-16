@@ -1309,13 +1309,18 @@ const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
     return out;
   }
   // height map from the letters -> slope -> R (x) and B (y) displacement, 128 = no bend
-  function makeMap(w,h,fs,bx,by){
+  function makeMap(w,h,fs,bx,by,glyphs){
     const s=0.5, mw=Math.max(2,Math.round(w*s)), mh=Math.max(2,Math.round(h*s));
     const c=document.createElement('canvas'); c.width=mw; c.height=mh; const g=c.getContext('2d');
     g.fillStyle='#000'; g.fillRect(0,0,mw,mh); g.fillStyle='#fff';
     g.font=FONT.replace('100px',(fs*s).toFixed(1)+'px'); g.textAlign='center'; g.textBaseline='alphabetic';
-    try{g.letterSpacing=(-0.06*fs*s)+'px';}catch(_){}
-    g.fillText(TEXT,bx*s,by*s);
+    if(glyphs && glyphs.length){
+      g.textAlign='left';
+      glyphs.forEach(gl=>{ if(gl.ch.trim()) g.fillText(gl.ch,gl.x*s,by*s); });
+    } else {
+      try{g.letterSpacing=(-0.06*fs*s)+'px';}catch(_){}
+      g.fillText(TEXT,bx*s,by*s);
+    }
     const d=g.getImageData(0,0,mw,mh).data; let a=new Float32Array(mw*mh);
     for(let i=0;i<a.length;i++)a[i]=d[i*4]/255;
     const r=Math.max(2,Math.round(fs*s*0.045));
@@ -1345,7 +1350,7 @@ const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
 
     // refraction filter (skill technique: 3 passes R/G/B at staggered scales, screen-blended)
     const f=mk('filter',{id:'wmRefract',x:0,y:0,width:W,height:H,filterUnits:'userSpaceOnUse','color-interpolation-filters':'sRGB'},defs);
-    mk('feImage',{href:makeMap(W,H,fs,bx,by),x:0,y:0,width:W,height:H,preserveAspectRatio:'none',result:'map'},f);
+    const feImg=mk('feImage',{x:0,y:0,width:W,height:H,preserveAspectRatio:'none',result:'map'},f);
     const base=-fs*0.34, keep=['1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0','0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0','0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0'];
     [0,1,2].forEach(i=>{
       mk('feDisplacementMap',{in:'SourceGraphic',in2:'map',scale:(base+i*fs*0.035).toFixed(1),xChannelSelector:'R',yChannelSelector:'B',result:'d'+i},f);
@@ -1378,7 +1383,11 @@ const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
     const room=mk('g',{filter:'url(#wmRefract)'},lens);                                  // the room, bent
     imgA=mk('image',{preserveAspectRatio:'xMidYMid slice'},room); imgB=mk('image',{preserveAspectRatio:'xMidYMid slice',opacity:0},room);
     mk('rect',{x:0,y:0,width:W,height:H,fill:'url(#wmSheen)'},lens);                    // glass tint + sheen
-    mk('text',{...tAttr,fill:'#fff',filter:'url(#wmBevel)',class:'bev'},svg).textContent=TEXT;       // bevelled edges
+    const bevT=mk('text',{...tAttr,fill:'#fff',filter:'url(#wmBevel)',class:'bev'},svg); bevT.textContent=TEXT;
+    // read where each letter actually landed, so the bend lines up with every letter (Safari ignores canvas letter-spacing)
+    let glyphs=null;
+    try{ glyphs=[...TEXT].map((ch,i)=>({ch,x:bevT.getStartPositionOfChar(i).x})); }catch(_){ glyphs=null; }
+    feImg.setAttribute('href',makeMap(W,H,fs,bx,by,glyphs));       // bevelled edges
     built=true; place(); if(curUrl) setImg(curUrl,true);
   }
   // line the photo up with the real background, magnified a touch like thick glass
@@ -1396,7 +1405,10 @@ const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
   }
   addEventListener('roomchange',e=>setImg(e.detail));
   let t; addEventListener('resize',()=>{clearTimeout(t);t=setTimeout(build,150);});
-  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(build);
+  // make sure the real Inter Extra Bold is loaded before measuring, otherwise the bend map is drawn in a fallback font
+  const fontReady=document.fonts&&document.fonts.load ? Promise.all([document.fonts.load('800 100px Inter'),document.fonts.ready]).catch(()=>{}) : Promise.resolve();
+  fontReady.then(build);
+  if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>setTimeout(build,50));
   setInterval(place,1000); // keeps alignment after the slab finishes rising
   let wq=false; addEventListener('scroll',()=>{ if(wq) return; wq=true; requestAnimationFrame(()=>{wq=false; place();}); },{passive:true});
   window.__wmPlace=place;
