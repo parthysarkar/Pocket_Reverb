@@ -250,7 +250,10 @@
     background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
   html.dark .warn{background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,235,210,.12)}
   .warn svg{flex:none;margin-top:1px}
-  .warn+.warn{margin-top:8px}
+  .warn+.warn{margin-top:0}
+  .rcol{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .warns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .warns .warn{margin:0}
   .warn b{font-weight:650}
   .warn .ws{display:none}
   @media (min-width:761px) and (max-height:860px){ .warn .wl{display:none} .warn .ws{display:inline} .warn{margin-top:10px;padding:8px 12px} }
@@ -411,6 +414,7 @@
     .icons{flex:1 1 100%;justify-content:space-between;gap:6px;padding:5px 6px}
     .evening{flex:1 1 100%;justify-content:space-between}
     .ico{flex:1;width:auto;height:40px}
+    .warns{grid-template-columns:1fr}
     .recbtn{padding:0 11px}
     .field{padding-left:16px;gap:8px}
     .ico .tip{bottom:50px}
@@ -472,18 +476,23 @@
           <audio id="rAudio" preload="metadata"></audio>
         </div>
         <button class="pill ai reveal d3" id="learn"><span class="lens"></span><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
-        <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.2 19 16.8H1z" fill="#ffcc00" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/><rect x="9" y="6" width="2" height="6" rx="1" fill="#111"/><circle cx="10" cy="14.2" r="1.15" fill="#111"/></svg>
-          <span class="wl"><b>Headphones recommended.</b> On a phone or laptop speaker the mic can hear its own reverb and build into a loud, shrill echo. After you tap Start, tap <b>Learn noise</b> straight away.</span><span class="ws"><b>Headphones recommended</b> — speakers can cause a shrill echo. Tap <b>Learn noise</b> right after Start.</span></div>
-        <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 24 22" aria-hidden="true"><path d="M3 14v-2.5a9 9 0 0 1 18 0V14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="2" y="13" width="5" height="8" rx="2" fill="currentColor"/><rect x="17" y="13" width="5" height="8" rx="2" fill="currentColor"/></svg>
-          <span class="wl"><b>Keep the volume low to medium.</b> Long sessions at high headphone volume can lead to ear fatigue and lasting hearing damage, and loud reverb tails can feel overwhelming. Take short breaks.</span><span class="ws"><b>Keep headphone volume low to medium</b> — long, loud sessions can harm your hearing.</span></div>
+
       </div>
 
+      <div class="rcol">
       <div class="panel lg reveal d2">
         <div class="col"><h4>Presets</h4><div id="tabs"></div></div>
         <div class="col"><h4>Shape</h4><div id="shape"></div></div>
         <div class="col"><h4>Noise</h4><div id="noise"></div>
           <div class="ctl"><label>Microphone</label><select id="mic" class="micsel"><option value="">Default mic</option></select></div></div>
         <div class="col"><h4>More</h4><div id="more"></div></div>
+      </div>
+      <div class="warns">
+        <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.2 19 16.8H1z" fill="#ffcc00" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/><rect x="9" y="6" width="2" height="6" rx="1" fill="#111"/><circle cx="10" cy="14.2" r="1.15" fill="#111"/></svg>
+          <span class="wl"><b>Headphones recommended.</b> On a phone or laptop speaker the mic can hear its own reverb and build into a loud, shrill echo. After you tap Start, tap <b>Learn noise</b> straight away.</span><span class="ws"><b>Headphones recommended</b> — speakers can cause a shrill echo. Tap <b>Learn noise</b> right after Start.</span></div>
+        <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 24 22" aria-hidden="true"><path d="M3 14v-2.5a9 9 0 0 1 18 0V14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="2" y="13" width="5" height="8" rx="2" fill="currentColor"/><rect x="17" y="13" width="5" height="8" rx="2" fill="currentColor"/></svg>
+          <span class="wl"><b>Keep the volume low to medium.</b> Long sessions at high headphone volume can lead to ear fatigue and lasting hearing damage, and loud reverb tails can feel overwhelming. Take short breaks.</span><span class="ws"><b>Keep headphone volume low to medium</b> — long, loud sessions can harm your hearing.</span></div>
+      </div>
       </div>
     </div>
 
@@ -2081,7 +2090,7 @@ showView(location.hash.slice(1),true);
   }
   function discard(){
     au.pause(); au.removeAttribute('src'); au.load();
-    if(url) URL.revokeObjectURL(url); url=null; blob=null; card.hidden=true; $('rProg').style.width='0';
+    if(url) URL.revokeObjectURL(url); url=null; blob=null; mp3=null; card.hidden=true; $('rProg').style.width='0';
   }
   recBtn.addEventListener('click',()=> mr ? stopRec() : startRec());
   // player
@@ -2093,17 +2102,50 @@ showView(location.hash.slice(1),true);
   au.addEventListener('timeupdate',()=>{ const d=isFinite(au.duration)&&au.duration>0?au.duration:+au.dataset.dur||1;
     $('rProg').style.width=Math.min(100,au.currentTime/d*100)+'%'; $('rTime').textContent=fmt(au.currentTime)+' / '+fmt(d); });
   $('rBar').addEventListener('click',e=>{ const r=e.currentTarget.getBoundingClientRect(), d=isFinite(au.duration)&&au.duration>0?au.duration:+au.dataset.dur||0; if(d) au.currentTime=(e.clientX-r.left)/r.width*d; });
+  // ---- MP3: works everywhere. Encoded on this device with lamejs (bundled, LGPL) the first time you tap Save ----
+  let mp3=null, encoding=false;
+  function loadLame(){ return window.lamejs?Promise.resolve():new Promise((ok,no)=>{ const sc=document.createElement('script'); sc.src='lame.min.js'; sc.onload=ok; sc.onerror=()=>no(new Error('encoder')); document.head.appendChild(sc); }); }
+  async function toMp3(src,onProg){
+    await loadLame();
+    const ab=await src.arrayBuffer();
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const buf=await new Promise((ok,no)=>{ const p=ac.decodeAudioData(ab,ok,no); if(p&&p.then) p.then(ok,no); });
+    ac.close();
+    const rates=[48000,44100,32000]; let sr=buf.sampleRate, chans=Math.min(2,buf.numberOfChannels);
+    let L=buf.getChannelData(0), R=chans>1?buf.getChannelData(1):null;
+    if(!rates.includes(sr)){                                       // resample to 44.1 kHz if needed
+      const off=new OfflineAudioContext(chans,Math.ceil(buf.duration*44100),44100), bs=off.createBufferSource(); bs.buffer=buf; bs.connect(off.destination); bs.start();
+      const rb=await off.startRendering(); sr=44100; L=rb.getChannelData(0); R=chans>1?rb.getChannelData(1):null;
+    }
+    const enc=new lamejs.Mp3Encoder(chans,sr,192), out=[], BLK=1152, n=L.length;
+    const i16=a=>{ const o=new Int16Array(a.length); for(let i=0;i<a.length;i++){ const v=Math.max(-1,Math.min(1,a[i])); o[i]=v<0?v*32768:v*32767; } return o; };
+    for(let i=0;i<n;i+=BLK*64){                                   // work in slices so the app stays responsive
+      const end=Math.min(n,i+BLK*64), l=i16(L.subarray(i,end)), r=R?i16(R.subarray(i,end)):null;
+      for(let j=0;j<l.length;j+=BLK){ const m=chans>1?enc.encodeBuffer(l.subarray(j,j+BLK),r.subarray(j,j+BLK)):enc.encodeBuffer(l.subarray(j,j+BLK)); if(m.length) out.push(new Uint8Array(m)); }
+      onProg&&onProg(end/n); await new Promise(r=>setTimeout(r,0));
+    }
+    const f=enc.flush(); if(f.length) out.push(new Uint8Array(f));
+    return new Blob(out,{type:'audio/mpeg'});
+  }
   // save: share sheet where available (iPhone), otherwise a normal download
   $('rSave').addEventListener('click',async()=>{
-    if(!blob) return;
-    const d=new Date(), pad=n=>String(n).padStart(2,'0');
-    const name=`Pocket Reverb ${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}-${pad(d.getMinutes())}.${ext}`;
-    const file=new File([blob],name,{type:blob.type});
+    if(!blob || encoding) return;
+    const btn=$('rSave'), d=new Date(), pad=n=>String(n).padStart(2,'0');
+    let out=mp3, ext2='mp3';
+    if(!out){
+      encoding=true; btn.disabled=true; btn.textContent='MP3 0%';
+      try{ out=mp3=await toMp3(blob,p=>btn.textContent='MP3 '+Math.round(p*100)+'%'); }
+      catch(e){ out=blob; ext2=ext; flash('MP3 not available','saving the original file'); }
+      encoding=false; btn.disabled=false; btn.textContent='Save';
+    }
+    const name=`Pocket Reverb ${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}-${pad(d.getMinutes())}.${ext2}`;
+    const file=new File([out],name,{type:out.type});
     if(navigator.canShare && navigator.canShare({files:[file]}) && matchMedia('(hover: none)').matches){
       try{ await navigator.share({files:[file],title:'Pocket Reverb session'}); return; }catch(e){ if(e.name==='AbortError') return; }
     }
-    const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
-    flash('Saved',name);
+    const u=URL.createObjectURL(out), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),4000);
+    flash('Saved', ext2.toUpperCase()+' file');
   });
   $('rDel').addEventListener('click',()=>{ discard(); flash('Recording','deleted'); });
   addEventListener('beforeunload',e=>{ if(blob||mr){ e.preventDefault(); e.returnValue=''; } });

@@ -28,3 +28,6 @@ SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING
 FROM THE USE OF THE SOFTWARE.
 
 For permission requests, contact Parth Sarkar.
+
+Third-party components: lame.min.js (lamejs MP3 encoder) is licensed under
+the GNU LGPL v3; see lame.LICENSE.txt. It is not covered by this notice.
