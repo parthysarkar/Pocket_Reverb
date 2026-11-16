@@ -229,6 +229,9 @@
   .pswitch.on .ptrack{background:rgba(255,255,255,.28)}
   .pswitch.on .pknob{transform:translateX(16px)}
   .pswitch:active .pknob{width:26px}
+  .pswitch{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  .pswitch.busy .pknob{transform:translateX(8px);animation:pbusy .9s ease-in-out infinite}
+  @keyframes pbusy{50%{opacity:.45}}
   /* recorder */
   .recbtn{flex:none;display:flex;align-items:center;gap:7px;height:42px;padding:0 14px;border:0;border-radius:999px;cursor:pointer;
     font:600 14px/1 inherit;font-family:inherit;color:#fff;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);transition:background .25s,opacity .25s}
@@ -1086,6 +1089,8 @@ async function listMics(){
 
 /* ---------- audio graph ---------- */
 async function start(){
+  const gen=++startGen;
+  try{ const ra=$('rAudio'); if(ra && !ra.paused) ra.pause(); }catch(_){}        // a playing recording holds the iPhone's audio
   try{
     ctx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
     stream = await navigator.mediaDevices.getUserMedia({audio:{
@@ -1101,6 +1106,9 @@ async function start(){
           : 'Could not open the microphone: '+e.message);
     stop(); return;
   }
+  if(gen!==startGen || !ctx){ try{ stream.getTracks().forEach(t=>t.stop()); }catch(_){} return; }   // switched off while opening
+  if(ctx.state!=='running'){ try{ await Promise.race([ctx.resume(), new Promise(r=>setTimeout(r,700))]); }catch(_){} }
+  if(gen!==startGen || !ctx) return;
   const n = nodes;
   try{
     const url = URL.createObjectURL(new Blob([WORKLETS],{type:'application/javascript'}));
@@ -1109,8 +1117,10 @@ async function start(){
     n.gateNode = new AudioWorkletNode(ctx,'gate',{outputChannelCount:[1]});
     n.den.port.onmessage = e => { if(e.data.learned!==undefined) noiseLearned = e.data.learned; };
   }catch(e){
+    if(gen!==startGen || !ctx) return;
     n.den = ctx.createGain(); n.gateNode = ctx.createGain(); n.noWorklet = true;
   }
+  if(gen!==startGen || !ctx) return;
   noiseLearned = false;
 
   const src = ctx.createMediaStreamSource(stream);
@@ -1148,9 +1158,10 @@ async function start(){
   setTimeout(()=>{ if(ctx) learn(true); },300);          // learn the room straight away to stop feedback
 }
 function stop(){
+  startGen++;
   cancelAnimationFrame(raf);
   if(stream) stream.getTracks().forEach(t=>t.stop());
-  if(ctx) ctx.close();
+  if(ctx){ try{ ctx.close().catch(()=>{}); }catch(_){} }
   ctx=null; stream=null; nodes={}; noiseLearned=false;
   setPower(false);
   lightPoles(0,false);
@@ -1246,7 +1257,16 @@ function choosePreset(name){
 }
 
 /* ---------- wiring ---------- */
-$('power').addEventListener('click',()=> ctx ? stop() : start());
+let powerBusy=0, startGen=0;
+$('power').addEventListener('click',async()=>{
+  const now=performance.now();
+  if(powerBusy){ if(now-powerBusy>6000){ stop(); powerBusy=0; $('power').classList.remove('busy'); } return; }   // still opening the mic
+  if(ctx){ stop(); return; }
+  powerBusy=now; $('power').classList.add('busy');
+  const slow=setTimeout(()=>{ try{ notice('Opening the microphone…',2500); }catch(_){} },900);
+  try{ await start(); }catch(e){ try{ stop(); }catch(_){} }
+  finally{ clearTimeout(slow); powerBusy=0; $('power').classList.remove('busy'); }
+});
 $('learn').addEventListener('click',learn);
 $('dry').addEventListener('change',e=>{state.dry=e.target.checked; applyAll();});
 $('focus').addEventListener('change',e=>{state.focus=e.target.checked; applyAll();});
@@ -2147,7 +2167,7 @@ showView(location.hash.slice(1),true);
     lim.threshold.value=-8; lim.ratio.value=16; lim.attack.value=.003; lim.release.value=.2;
     dry.gain.value=state.dry?0:1.0;
     nodes.limiter.connect(bus); nodes.gateNode.connect(dry); dry.connect(bus); bus.connect(lim); lim.connect(dst);
-    recNodes={bus,dry,lim};
+    recNodes={bus,dry,lim,dst};
     try{ mr=new MediaRecorder(dst.stream, pt[0]?{mimeType:pt[0],audioBitsPerSecond:160000}:undefined); }
     catch(e){ try{ mr=new MediaRecorder(dst.stream); }catch(e2){ showErr('Could not start recording.'); return; } }
     mime=mr.mimeType||pt[0]||'audio/webm'; ext=/mp4|aac|m4a/.test(mime)?'m4a':/ogg/.test(mime)?'ogg':'webm';
@@ -2162,6 +2182,7 @@ showView(location.hash.slice(1),true);
   function finish(){
     try{ recNodes.bus.disconnect(); recNodes.dry.disconnect(); recNodes.lim.disconnect(); nodes.limiter&&nodes.limiter.disconnect(recNodes.bus); }catch(_){}
     try{ nodes.gateNode&&nodes.gateNode.disconnect(recNodes.dry); }catch(_){}
+    try{ recNodes.dst.stream.getTracks().forEach(t=>t.stop()); recNodes.dst.disconnect(); }catch(_){}   // let go of the recording stream so the iPhone frees its audio
     recNodes=null;
     const dur=(performance.now()-t0)/1000; mr=null;
     if(!chunks.length){ flash('Recording','nothing captured'); return; }
@@ -2270,7 +2291,8 @@ function notice(msg,ms=5000){
   }
   async function resumeMic(){
     if(!paused) return; paused=false;
-    if(typeof ctx!=='undefined' && ctx && ctx.state==='suspended'){ try{ await ctx.resume(); }catch(_){} notice('Listening again',2000); }
+    if(typeof ctx!=='undefined' && ctx && ctx.state!=='running'){ const c=ctx; try{ await Promise.race([c.resume(), new Promise(r=>setTimeout(r,800))]); }catch(_){}
+      if(ctx===c && c.state!=='running'){ stop(); notice('Reverb stopped. Tap Start to turn it back on.',4000); } else notice('Listening again',2000); }
     try{ hearShown=''; }catch(_){}
   }
   au.addEventListener('play',pauseMic);
