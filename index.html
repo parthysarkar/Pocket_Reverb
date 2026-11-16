@@ -307,6 +307,27 @@
     padding:7px 10px;border-radius:999px;transition:background .2s, box-shadow .2s;display:flex;align-items:center;gap:8px}
   .tab:hover{background:rgba(255,255,255,.38);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75), 0 4px 10px -4px rgba(40,25,10,.3)}
   html.dark .tab:hover{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.18)}
+  .prow{display:flex;align-items:center;gap:2px}
+  .star{flex:none;width:26px;height:26px;border:0;border-radius:50%;background:transparent;display:grid;place-items:center;cursor:pointer;opacity:.35;transition:opacity .2s, transform .15s}
+  .star svg path{fill:none;stroke:#1e1915}
+  .prow:hover .star{opacity:.7}
+  .star.on{opacity:1}
+  .star.on svg path{fill:#1e1915}
+  html.dark .star svg path{stroke:#f3ede6} html.dark .star.on svg path{fill:#f3ede6}
+  .star:active{transform:scale(.85)}
+  .pdel{flex:none;width:22px;height:22px;border:0;border-radius:50%;background:transparent;color:var(--sub);font-size:16px;line-height:1;cursor:pointer;opacity:.5}
+  .pdel:hover{opacity:1}
+  .addp{margin-top:4px;border:0;cursor:pointer;font:600 13px/1 inherit;font-family:inherit;color:var(--ink);padding:9px 13px;border-radius:999px;
+    background:rgba(255,255,255,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7), 0 4px 10px -6px rgba(40,25,10,.4);animation:viewIn .3s ease}
+  .addp span{font-size:15px;margin-right:2px}
+  html.dark .addp{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.16)}
+  .pname{display:flex;align-items:center;gap:4px;margin-top:4px;padding:3px 3px 3px 10px;border-radius:999px;background:rgba(255,255,255,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75)}
+  html.dark .pname{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.16)}
+  .pname input{width:110px;border:0;background:transparent;color:var(--ink);font:500 13px inherit;font-family:inherit;outline:none}
+  .pname button{border:0;cursor:pointer;font:600 12px/1 inherit;font-family:inherit;padding:7px 11px;border-radius:999px;color:#fff;background:#17120f}
+  html.dark .pname button{background:#f3ede6;color:#17120f}
+  .pname .x{background:transparent!important;color:var(--sub)!important;padding:7px 6px;font-size:15px}
+  #tabs{max-height:100%;overflow-y:auto;scrollbar-width:none}
   .tab.active::after{content:"On";font-size:10px;font-weight:600;color:#fff;background:var(--accent);padding:3px 7px;border-radius:999px;line-height:1}
 
   .ctl{margin:0 0 11px}
@@ -2215,6 +2236,81 @@ function notice(msg,ms=5000){
   $('rSave').addEventListener('click',()=>{ au.pause(); resumeMic(); },true);
   $('rDel').addEventListener('click',()=>{ resumeMic(); },true);
   $('power').addEventListener('click',()=>{ if(paused){ paused=false; } },true);
+})();
+
+/* =====================================================================
+   Presets: favourites (★, float to the top in the order you starred them)
+   and your own custom presets saved from the current settings.
+   ===================================================================== */
+(function(){
+  const BUILTIN=Object.keys(PRESETS), KEYS=[...REVERB_KEYS,'vol'];
+  const load=(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k))??d; }catch(_){ return d; } };
+  const save=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(_){} };
+  let favs=load('pr_favs',[]), custom=load('pr_custom',{}), active='Reverb 1', tweaked=false, naming=false;
+  for(const n in custom) PRESETS[n]=custom[n];
+  favs=favs.filter(n=>PRESETS[n]);
+  const STAR='<svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2 6.3 20.3l1.2-6.4L2.8 9.5l6.4-.8z" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+  const box=$('tabs');
+  function order(){ const all=[...BUILTIN,...Object.keys(custom)]; return [...favs, ...all.filter(n=>!favs.includes(n))]; }
+  function render(){
+    box.innerHTML='';
+    order().forEach(name=>{
+      const row=document.createElement('div'); row.className='prow';
+      const t=document.createElement('button'); t.className='tab'+(name===active&&!tweaked?' active':''); t.dataset.name=name; t.textContent=name;
+      t.onclick=()=>{ choosePreset(name); };
+      const st=document.createElement('button'); st.className='star'+(favs.includes(name)?' on':''); st.innerHTML=STAR;
+      st.setAttribute('aria-label',(favs.includes(name)?'Remove ':'Add ')+name+' '+(favs.includes(name)?'from':'to')+' favourites');
+      st.onclick=()=>{ favs=favs.includes(name)?favs.filter(x=>x!==name):[...favs,name]; save('pr_favs',favs); render(); flash(favs.includes(name)?'Favourite':'Removed from favourites',name); };
+      row.append(t,st);
+      if(custom[name]){ const del=document.createElement('button'); del.className='pdel'; del.innerHTML='×'; del.setAttribute('aria-label','Delete '+name);
+        del.onclick=()=>{ delete custom[name]; delete PRESETS[name]; favs=favs.filter(x=>x!==name); save('pr_custom',custom); save('pr_favs',favs); if(active===name) tweaked=true; render(); flash('Deleted',name); };
+        row.append(del); }
+      box.append(row);
+    });
+    // "save these settings" appears once you've tweaked something
+    if(tweaked){
+      const row=document.createElement('div'); row.className='prow psave';
+      if(!naming){
+        const b=document.createElement('button'); b.className='addp'; b.innerHTML='<span>+</span> Save as my preset';
+        b.onclick=()=>{ naming=true; render(); };
+        row.append(b);
+      } else {
+        const f=document.createElement('form'); f.className='pname';
+        let i=1; while(PRESETS['My preset '+i]) i++;
+        f.innerHTML=`<input maxlength="18" value="My preset ${i}" aria-label="Preset name"><button>Save</button><button type="button" class="x" aria-label="Cancel">×</button>`;
+        const inp=f.querySelector('input');
+        f.onsubmit=e=>{ e.preventDefault(); let n=inp.value.trim().slice(0,18)||('My preset '+i);
+          if(BUILTIN.includes(n)) n+=' (mine)';
+          const p={}; KEYS.forEach(k=>p[k]=state[k]); custom[n]=p; PRESETS[n]=p; save('pr_custom',custom);
+          naming=false; tweaked=false; active=n; render(); flash('Saved preset',n); };
+        f.querySelector('.x').onclick=()=>{ naming=false; render(); };
+        row.append(f); setTimeout(()=>{ inp.focus(); inp.select(); },30);
+      }
+      box.append(row);
+    }
+  }
+  // take over the app's preset hooks so the list stays in sync
+  window.markPreset=function(name){
+    if(name===null){ if(!tweaked){ tweaked=true; render(); } return; }
+    active=name; tweaked=false; naming=false; render();
+  };
+  render();
+})();
+
+/* =====================================================================
+   Switching pages hands the mic over: leaving Reverb pauses it, Tuner
+   starts on its own, and coming back to Reverb resumes it if it was on.
+   ===================================================================== */
+(function(){
+  let reverbWasOn=false, cur=document.querySelector('.view.on')?.id?.replace('view-','')||'reverb';
+  document.querySelectorAll('#seg button').forEach(b=>b.addEventListener('click',async()=>{
+    const to=b.dataset.view; if(to===cur) return; const from=cur; cur=to;
+    if(from==='reverb'){ reverbWasOn=!!ctx; if(ctx){ stop(); notice('Reverb paused while you use '+(to==='tuner'?'the tuner':'the chord library'),3000); } }
+    if(to==='tuner' && reverbWasOn && !window.__tunerOn){ setTimeout(()=>$('tBtn').click(),250); }
+    if(to==='reverb' && reverbWasOn && !ctx){ setTimeout(()=>{ if(!ctx) $('power').click(); },250); notice('Reverb back on',2000); }
+  }));
+  // remember whether the tuner is running
+  new MutationObserver(()=>{ window.__tunerOn=$('tBtn').classList.contains('on'); }).observe($('tBtn'),{attributes:true,attributeFilter:['class']});
 })();
 
 </script>
