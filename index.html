@@ -228,6 +228,7 @@
     background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
   html.dark .warn{background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,235,210,.12)}
   .warn svg{flex:none;margin-top:1px}
+  .warn+.warn{margin-top:8px}
   .warn b{font-weight:650}
   .warn .ws{display:none}
   @media (min-width:761px) and (max-height:860px){ .warn .wl{display:none} .warn .ws{display:inline} .warn{margin-top:10px;padding:8px 12px} }
@@ -441,6 +442,8 @@
         <button class="pill ai reveal d3" id="learn"><span class="lens"></span><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
         <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.2 19 16.8H1z" fill="#ffcc00" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/><rect x="9" y="6" width="2" height="6" rx="1" fill="#111"/><circle cx="10" cy="14.2" r="1.15" fill="#111"/></svg>
           <span class="wl"><b>Headphones recommended.</b> On a phone or laptop speaker the mic can hear its own reverb and build into a loud, shrill echo. After you tap Start, tap <b>Learn noise</b> straight away.</span><span class="ws"><b>Headphones recommended</b> — speakers can cause a shrill echo. Tap <b>Learn noise</b> right after Start.</span></div>
+        <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 24 22" aria-hidden="true"><path d="M3 14v-2.5a9 9 0 0 1 18 0V14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="2" y="13" width="5" height="8" rx="2" fill="currentColor"/><rect x="17" y="13" width="5" height="8" rx="2" fill="currentColor"/></svg>
+          <span class="wl"><b>Keep the volume low to medium.</b> Long sessions at high headphone volume can lead to ear fatigue and lasting hearing damage, and loud reverb tails can feel overwhelming. Take short breaks.</span><span class="ws"><b>Keep headphone volume low to medium</b> — long, loud sessions can harm your hearing.</span></div>
       </div>
 
       <div class="panel lg reveal d2">
@@ -1070,10 +1073,13 @@ function stop(){
 }
 
 /* level bar + "hearing you" */
+let hearUntil=0, hearShown='';
 function lightPoles(level, hearing){
   $('meterFill').style.width=Math.min(100,level*100)+'%';
-  const h=$('hear'); h.classList.toggle('on',!!hearing);
-  h.textContent = !ctx ? 'waiting' : hearing ? 'hearing you' : 'quiet';
+  const now=performance.now(); if(hearing) hearUntil=now+5000;
+  const on=!!ctx && now<hearUntil, txt=!ctx?'waiting':on?'hearing you':'quiet';
+  if(txt===hearShown) return; hearShown=txt;
+  const h=$('hear'); h.classList.toggle('on',on); h.textContent=txt;
 }
 function meterLoop(){
   const buf=new Float32Array(nodes.analyser.fftSize); let sm=0;
