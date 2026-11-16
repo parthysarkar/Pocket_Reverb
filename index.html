@@ -36,9 +36,9 @@
 
   /* ---------- the room ---------- */
   #room{position:fixed;inset:-3%;filter:blur(14px) saturate(1.05);transform:scale(1.05);transition:filter 1.8s ease, transform 1.8s ease;background:#2a221c}
-  body.up #room{filter:blur(0);transform:scale(1)}
-  #room .bg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 2.2s ease, transform 12s linear;transform:scale(1.03)}
-  #room .bg.show{opacity:1;transform:scale(1.09)}
+  body.up #room{filter:none;transform:none}
+  #room .bg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 2.2s ease;will-change:opacity}
+  #room .bg.show{opacity:1}
 
   /* ---------- the glass slab ---------- */
   .slab{position:fixed;left:22px;right:22px;top:clamp(14px,calc(16vh - 56px),150px);bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;border-radius:34px;
@@ -59,6 +59,8 @@
   .viz{position:relative;z-index:3;flex:none;height:var(--vizH);margin:-6px -40px 0;pointer-events:none;
     -webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
   .viz canvas{display:block;width:100%;height:100%}
+  .viz,.wmbar,.pill.ai,.pick{transform:translateZ(0)}
+  .wmbar{contain:layout paint}
   .viz::after{content:"";position:absolute;left:4%;right:4%;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)}
   .content{display:flex;flex-direction:column;position:relative;z-index:2;height:calc(100% - var(--wmH,160px) - var(--vizH) + 10px);min-height:0}
   .content>.head,.content>.bottom{flex:none}
@@ -68,7 +70,9 @@
   #view-tuner.on{overflow:hidden}
   .twrap{margin-top:clamp(6px,1.4vh,18px)}
   .cwrap,.twrap{flex:1 1 auto;min-height:0}
-  .cleft{min-height:0;overflow-y:auto;scrollbar-width:none;padding-bottom:4px}
+  .cleft{min-height:0;max-height:100%;align-self:stretch;overflow-y:auto;scrollbar-width:none;padding-bottom:4px;
+    -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 18px),transparent)}
+  .cleft::-webkit-scrollbar{display:none}
   .panel.cpanel{display:flex;flex-direction:column;min-height:0;max-height:100%}
   .panel.cpanel .cats{flex:none}
   #spacer{display:none}
@@ -207,6 +211,31 @@
     background:#17120f;box-shadow:inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px rgba(0,0,0,.3);transition:background .25s, transform .12s}
   .btn:active{transform:scale(.97)}
   .btn.on{background:#c2433f}
+  .pswitch{flex:none;display:flex;align-items:center;gap:10px;height:42px;padding:0 6px 0 18px;border:0;border-radius:999px;cursor:pointer;
+    font:600 14px/1 inherit;font-family:inherit;color:#1e1915;min-width:118px;justify-content:space-between;
+    background:linear-gradient(180deg,#fff,#f0ebe5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.9), 0 3px 10px -3px rgba(0,0,0,.4);transition:background .35s, color .35s, box-shadow .35s}
+  .pswitch .ptrack{position:relative;width:44px;height:28px;border-radius:999px;background:rgba(30,25,21,.14);box-shadow:inset 0 1px 3px rgba(0,0,0,.2);transition:background .35s}
+  .pswitch .pknob{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.35);transition:transform .32s cubic-bezier(.3,.7,.3,1.2)}
+  .pswitch.on{color:#fff;background:linear-gradient(180deg,#43cf6c,#25a84d);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35), 0 0 16px rgba(52,199,89,.45), 0 3px 10px -3px rgba(0,0,0,.4)}
+  .pswitch.on .ptrack{background:rgba(255,255,255,.28)}
+  .pswitch.on .pknob{transform:translateX(16px)}
+  .pswitch:active .pknob{width:26px}
+  /* headphones warning */
+  .warn{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 0;padding:11px 14px;border-radius:16px;font-size:12.5px;line-height:1.45;color:var(--ink);
+    background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+  html.dark .warn{background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,235,210,.12)}
+  .warn svg{flex:none;margin-top:1px}
+  .warn b{font-weight:650}
+  .warn .ws{display:none}
+  @media (min-width:761px) and (max-height:860px){ .warn .wl{display:none} .warn .ws{display:inline} .warn{margin-top:10px;padding:8px 12px} }
+  @media (min-width:761px) and (max-height:700px){ #view-reverb #statusHint{display:none} }
+  @media (min-width:761px) and (max-height:820px){
+    :root{--vizH:40px}
+    #view-reverb .panel{padding:12px 20px 8px}
+    #view-reverb .ctl{margin-bottom:4px} #view-reverb .ctl label{font-size:12.5px;margin-bottom:2px}
+    #view-reverb input[type=range]{height:14px}
+    #view-reverb .col h4{margin-bottom:5px}
+  }
   .hint{margin:10px 0 0 22px;font-size:12.5px;color:var(--sub);height:34px;overflow:hidden;line-height:1.35}
 
   /* Learn noise — dark glass pill, moving light ring (canvas) */
@@ -274,13 +303,12 @@
   .ico:hover .tip, .ico.show .tip{opacity:1}
   @media (hover:none){ .ico:hover .tip{opacity:0} .ico.show .tip{opacity:1} }
   .evening{display:flex;align-items:center;gap:10px}
-  #orb{width:56px;height:26px;border-radius:999px;border:0;position:relative;padding:0;
-    background:rgba(255,255,255,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.7), inset 0 1px 3px rgba(40,25,10,.2)}
-  #orb::after{content:"";position:absolute;top:3px;left:3px;width:28px;height:20px;border-radius:999px;transition:transform .3s;
-    background:radial-gradient(circle at 35% 30%,#fff,#e9e3dc);box-shadow:0 2px 5px rgba(40,25,10,.35)}
-  #orb{transition:background .3s, box-shadow .3s}
-  html.dark #orb{background:linear-gradient(180deg,#45d16e,#2fb457);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35), 0 0 12px rgba(52,199,89,.45)}
-  html.dark #orb::after{transform:translateX(22px)}
+  #orb{width:60px;height:30px;border-radius:999px;border:0;position:relative;padding:0;cursor:pointer;transition:background .3s, box-shadow .3s;
+    background:linear-gradient(180deg,#fff,#efeae4);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08), inset 0 1px 3px rgba(40,25,10,.15), 0 2px 6px -2px rgba(40,25,10,.3)}
+  #orb::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;transition:transform .32s cubic-bezier(.3,.7,.3,1.2), background-color .3s;
+    background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d98a00' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='4.2' fill='%23ffb81c' stroke='none'/%3E%3Cpath d='M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7'/%3E%3C/svg%3E") center/16px no-repeat;box-shadow:0 2px 5px rgba(40,25,10,.35), inset 0 0 0 1px rgba(0,0,0,.05)}
+  html.dark #orb{background:linear-gradient(180deg,#26221f,#0f0d0b);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 2px 8px -2px rgba(0,0,0,.6)}
+  html.dark #orb::after{transform:translateX(30px);background:#3a3531 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1z' fill='%23f3efe8'/%3E%3C/svg%3E") center/14px no-repeat;box-shadow:0 2px 5px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.12)}
 
   /* giant glass wordmark, cut off by the bottom edge */
   html.dark #wm .bev{opacity:.5}
@@ -296,7 +324,7 @@
   @media (pointer:fine){ #drop{display:block} }
   #drop.big{width:46px;height:46px;margin:-23px 0 0 -23px}
   .ripple{position:absolute;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;pointer-events:none;
-    box-shadow:inset 0 0 26px 8px rgba(70,45,20,.16), 0 0 24px 6px rgba(255,255,255,.10), inset 0 0 0 1px rgba(255,255,255,.18);
+    box-shadow:inset 0 0 14px 4px rgba(70,45,20,.15), inset 0 0 0 1px rgba(255,255,255,.22);will-change:transform,opacity;
     animation:rip 1.5s cubic-bezier(.2,.7,.3,1) forwards}
   html.dark .ripple{box-shadow:inset 0 0 26px 8px rgba(0,0,0,.3), 0 0 24px 6px rgba(255,220,170,.06)}
   @keyframes rip{from{transform:scale(.06);opacity:.95}to{transform:scale(1);opacity:0}}
@@ -315,7 +343,7 @@
   @media (max-width:760px), (max-height:560px){
     html,body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto}
     #spacer{display:block}
-    .slab{position:fixed;left:10px;right:10px;top:34vh;bottom:calc(8px + env(safe-area-inset-bottom));border-radius:28px}
+    .slab{-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);position:fixed;left:10px;right:10px;top:34vh;bottom:calc(8px + env(safe-area-inset-bottom));border-radius:28px}
     .inner{height:100%;overflow:hidden;padding:0}
     .content{padding:22px 18px 22px;will-change:transform;
       -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 18px,#000 calc(100% - 0px));
@@ -330,7 +358,7 @@
     .content{height:auto}
     .view.on,#view-tuner.on{overflow:visible}
     .cwrap,.twrap{grid-template-rows:auto}
-    .cleft{overflow:visible}
+    .cleft{overflow:visible;max-height:none;-webkit-mask-image:none;mask-image:none}
     .panel.cpanel{max-height:none}
     .cgrid{overflow:visible}
     .head{flex-direction:column;align-items:stretch;gap:14px}
@@ -403,10 +431,12 @@
         <div class="status fade reveal d1" id="status">Ready when you are</div>
         <div class="field reveal d2">
           <div class="lvl"><div class="row"><span>Input level</span><span id="hear">waiting</span></div><div class="meter"><i id="meterFill"></i></div></div>
-          <button class="btn" id="power"><span id="powerL" class="fade">Start</span></button>
+          <button class="pswitch" id="power" role="switch" aria-checked="false"><span id="powerL" class="fade">Start</span><span class="ptrack"><span class="pknob"></span></span></button>
         </div>
         <div class="hint fade reveal d2" id="statusHint">Put on headphones, then tap Start.</div>
         <button class="pill ai reveal d3" id="learn"><span class="lens"></span><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
+        <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.2 19 16.8H1z" fill="#ffcc00" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/><rect x="9" y="6" width="2" height="6" rx="1" fill="#111"/><circle cx="10" cy="14.2" r="1.15" fill="#111"/></svg>
+          <span class="wl"><b>Headphones recommended.</b> On a phone or laptop speaker the mic can hear its own reverb and build into a loud, shrill echo. After you tap Start, tap <b>Learn noise</b> straight away.</span><span class="ws"><b>Headphones recommended</b> — speakers can cause a shrill echo. Tap <b>Learn noise</b> right after Start.</span></div>
       </div>
 
       <div class="panel lg reveal d2">
@@ -828,8 +858,7 @@ function flash(name,val){
 function showErr(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none',6000); }
 function setPower(on){
   fadeText($('powerL'), on?'Stop':'Start');
-  $('power').classList.toggle('on',on);
-  $('orb').classList.toggle('on',on);
+  $('power').classList.toggle('on',on); $('power').setAttribute('aria-checked',on?'true':'false');
   if(on) setStatus('Listening', 'Tap Learn noise and stay quiet for 3 seconds, then play.');
   else { setStatus('Ready when you are', 'Put on headphones, then tap Start.'); fadeText($('learnL'),'Learn noise'); }
 }
@@ -1163,7 +1192,9 @@ markPreset('Reverb 1'); applyAll();
   new ResizeObserver(layout).observe(btn); layout();
   const lobe=(d,k)=>Math.exp(-k*(1-Math.cos(d)));
   let t=0, last=performance.now(), boost=0;
+  let lastDraw=0; const vis=()=>!document.hidden && btn.offsetParent!==null && (()=>{const r=btn.getBoundingClientRect();return r.bottom>0&&r.top<innerHeight})();
   function frame(now){
+    if(now-lastDraw<40 || !vis()){ requestAnimationFrame(frame); return; } lastDraw=now;
     const dt=Math.min(.05,(now-last)/1000); last=now;
     const listening=btn.classList.contains('listening');
     boost += ((listening?1:0)-boost)*Math.min(1,dt*4);
@@ -1207,9 +1238,7 @@ markPreset('Reverb 1'); applyAll();
 })();
 
 /* liquid glass on each card (real refraction in Chrome, frosted blur on iPhone) */
-document.querySelectorAll('.lg').forEach(c=>{
-  try{ liquidGlass(c,{scale:-56, chroma:4, blur:12, saturate:1.4, fallbackBlur:14}); }catch(_){}
-});
+/* (panel refraction removed for performance: the slab underneath is already frosted) */
 
 </script>
 <script>
@@ -1417,7 +1446,7 @@ const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
   const fontReady=document.fonts&&document.fonts.load ? Promise.all([document.fonts.load('800 100px Inter'),document.fonts.ready]).catch(()=>{}) : Promise.resolve();
   fontReady.then(build);
   if(document.fonts&&document.fonts.addEventListener) document.fonts.addEventListener('loadingdone',()=>setTimeout(build,50));
-  setInterval(place,1000); // keeps alignment after the slab finishes rising
+  setTimeout(place,1900); setTimeout(place,2600); // after the slab finishes rising
   let wq=false; addEventListener('scroll',()=>{ if(wq) return; wq=true; requestAnimationFrame(()=>{wq=false; place();}); },{passive:true});
   window.__wmPlace=place;
 })();
@@ -1474,7 +1503,7 @@ function glassLens(host,{scale=-60,chroma=5,border=0.07,mapBlur=10,zoom=1.08,tin
   addEventListener('roomchange',e=>set(e.detail));
   const cur=getComputedStyle(document.documentElement).getPropertyValue('--room').match(/url\("?([^")]+)"?\)/); if(cur) url=cur[1];
   new ResizeObserver(()=>build()).observe(host);
-  setInterval(place,500); addEventListener('resize',placeSoon); addEventListener('scroll',placeSoon,{passive:true});
+  setTimeout(place,1900); setTimeout(place,2600); addEventListener('resize',placeSoon); addEventListener('scroll',placeSoon,{passive:true});
   return {place};
 }
 const learnLens=glassLens($('learn'),{scale:-34,chroma:4,border:0.1,mapBlur:8,zoom:1.12,tint:'rgba(18,12,8,.24)'});
@@ -1900,11 +1929,15 @@ showView(location.hash.slice(1),true);
     }
     return lv;
   }
+  let lastDraw=0;
   function frame(now){
     requestAnimationFrame(frame);
     if(document.hidden || !W) return;
-    const dt=Math.min(.05,(now-last)/1000); last=now; t+=dt;
-    const lv=Math.min(1,read()*9);
+    const busy=taps.size>0 && (level>.01 || drops.length);
+    if(now-lastDraw < (busy?15:100)) return;             // calm water doesn't need 60 fps
+    lastDraw=now;
+    const dt=Math.min(.08,(now-last)/1000); last=now; t+=dt;
+    const lv=taps.size?Math.min(1,read()*9):0;
     const prev=level; level+= (lv-level)*(lv>level?.45:.08); slow+=(level-slow)*.03;
     for(let k=0;k<N;k++) sm[k]+= (bands[k]-sm[k])*(bands[k]>sm[k]?.5:.1);
     if(level-prev>.12 && level>.25 && drops.length<4) drops.push({x:W*(.15+Math.random()*.7),r:0,a:.9});
@@ -1939,7 +1972,7 @@ showView(location.hash.slice(1),true);
     { const L=layers[2]; for(let x=0;x<=W;x+=4){ const u=x/W, env=Math.sin(Math.PI*u), b=bandAt(x), base=1.6+slow*4, live=level*H*.42;
       const y=mid-env*(base*Math.sin(u*Math.PI*2*L.k+t*L.sp*2+L.ph)+live*(0.35+b*1.1)*Math.sin(u*Math.PI*2*(L.k+2)-t*(3+L.sp)+L.ph*1.7)+live*0.4*b*Math.sin(u*Math.PI*14+t*7));
       x?g.lineTo(x,y):g.moveTo(x,y);} }
-    g.strokeStyle=dark?'rgba(0,0,0,.35)':'rgba(90,55,25,.18)'; g.lineWidth=3; g.filter='blur(2px)'; g.stroke(); g.restore();
+    g.strokeStyle=dark?'rgba(0,0,0,.35)':'rgba(90,55,25,.18)'; g.lineWidth=2.4; g.stroke(); g.restore();
     g.save(); g.globalCompositeOperation=dark?'lighter':'source-over';
     g.beginPath();
     const L=layers[2];
@@ -1950,7 +1983,7 @@ showView(location.hash.slice(1),true);
     }
     const sg=g.createLinearGradient(0,0,W,0);
     sg.addColorStop(0,'rgba(255,255,255,0)'); sg.addColorStop(.5,`rgba(255,255,255,${.75+level*.25})`); sg.addColorStop(1,'rgba(255,255,255,0)');
-    g.strokeStyle=sg; g.lineWidth=1.6+level*1.4; g.shadowColor='rgba(255,240,220,.8)'; g.shadowBlur=6+level*14; g.stroke();
+    g.strokeStyle=sg; g.lineWidth=1.6+level*1.4; g.shadowColor='rgba(255,240,220,.8)'; g.shadowBlur=level>.02?4+level*10:0; g.stroke();
     g.restore();
     // ripple rings dropped by strong plucks
     drops=drops.filter(d=>d.a>.02);
