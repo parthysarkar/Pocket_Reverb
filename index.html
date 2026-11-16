@@ -307,7 +307,11 @@
     padding:7px 10px;border-radius:999px;transition:background .2s, box-shadow .2s;display:flex;align-items:center;gap:8px}
   .tab:hover{background:rgba(255,255,255,.38);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75), 0 4px 10px -4px rgba(40,25,10,.3)}
   html.dark .tab:hover{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.18)}
-  .prow{display:flex;align-items:center;gap:2px}
+  .prow{display:contents}
+  #tabs:has(.prow){display:grid;grid-template-columns:minmax(0,max-content) 26px 22px;align-items:center;column-gap:2px;row-gap:2px;justify-content:start}
+  .prow>.tab{min-width:0;max-width:100%} .tab .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .prow.psave{display:block;grid-column:1/-1}
+  .pgap{width:22px}
   .star{flex:none;width:26px;height:26px;border:0;border-radius:50%;background:transparent;display:grid;place-items:center;cursor:pointer;opacity:.35;transition:opacity .2s, transform .15s}
   .star svg path{fill:none;stroke:#1e1915}
   .prow:hover .star{opacity:.7}
@@ -323,7 +327,7 @@
   html.dark .addp{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.16)}
   .pname{display:flex;align-items:center;gap:4px;margin-top:4px;padding:3px 3px 3px 10px;border-radius:999px;background:rgba(255,255,255,.45);box-shadow:inset 0 0 0 1px rgba(255,255,255,.75)}
   html.dark .pname{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.16)}
-  .pname input{width:110px;border:0;background:transparent;color:var(--ink);font:500 13px inherit;font-family:inherit;outline:none}
+  .pname input{width:128px;border:0;background:transparent;color:var(--ink);font:500 13px inherit;font-family:inherit;outline:none}
   .pname button{border:0;cursor:pointer;font:600 12px/1 inherit;font-family:inherit;padding:7px 11px;border-radius:999px;color:#fff;background:#17120f}
   html.dark .pname button{background:#f3ede6;color:#17120f}
   .pname .x{background:transparent!important;color:var(--sub)!important;padding:7px 6px;font-size:15px}
@@ -438,7 +442,8 @@
     .status{font-size:30px;margin-top:18px;height:auto;min-height:1.15em}
     .hint{height:auto;min-height:18px}
     .panel{grid-template-columns:1fr;gap:20px;padding:18px 18px 8px}
-    #tabs{flex-direction:row;flex-wrap:wrap;margin-left:-6px;gap:6px}
+    #tabs,#tabs:has(.prow){display:flex;flex-direction:row;flex-wrap:wrap;margin-left:-6px;gap:6px}
+    .prow{display:flex;align-items:center} .pgap{display:none}
     .tab{background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45);padding:9px 13px}
     html.dark .tab{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.12)}
     .ctl{margin-bottom:14px} .ctl label{font-size:15px} .ctl label b{font-size:13px}
@@ -835,8 +840,8 @@
 <script>
 /* ---------- real room photos: day set and evening set, cross-fading every 10 s ---------- */
 const BG={
-  day:  {land:['bg/day-l1.jpg','bg/day-p1.jpg'], port:['bg/day-p1.jpg','bg/day-l1.jpg']},
-  night:{land:['bg/night-l1.jpg','bg/night-l2.jpg','bg/night-l3.jpg','bg/night-p1.jpg'], port:['bg/night-p1.jpg','bg/night-l1.jpg','bg/night-l2.jpg','bg/night-l3.jpg']},
+  day:  {land:['bg/day-l2.jpg','bg/day-l1.jpg'], port:['bg/day-l2.jpg','bg/day-l1.jpg']},
+  night:{land:['bg/night-l4.jpg','bg/night-l1.jpg','bg/night-l2.jpg','bg/night-l3.jpg'], port:['bg/night-l4.jpg','bg/night-l1.jpg','bg/night-l2.jpg','bg/night-l3.jpg']},
 };
 let bgIdx=0, bgFront=0, bgTimer=null, bgKey='';
 const portraitMQ=matchMedia('(orientation: portrait)');
@@ -2256,7 +2261,7 @@ function notice(msg,ms=5000){
     box.innerHTML='';
     order().forEach(name=>{
       const row=document.createElement('div'); row.className='prow';
-      const t=document.createElement('button'); t.className='tab'+(name===active&&!tweaked?' active':''); t.dataset.name=name; t.textContent=name;
+      const t=document.createElement('button'); t.className='tab'+(name===active&&!tweaked?' active':''); t.dataset.name=name; t.title=name; const pn=document.createElement('span'); pn.className='pn'; pn.textContent=name; t.append(pn);
       t.onclick=()=>{ choosePreset(name); };
       const st=document.createElement('button'); st.className='star'+(favs.includes(name)?' on':''); st.innerHTML=STAR;
       st.setAttribute('aria-label',(favs.includes(name)?'Remove ':'Add ')+name+' '+(favs.includes(name)?'from':'to')+' favourites');
@@ -2264,7 +2269,7 @@ function notice(msg,ms=5000){
       row.append(t,st);
       if(custom[name]){ const del=document.createElement('button'); del.className='pdel'; del.innerHTML='×'; del.setAttribute('aria-label','Delete '+name);
         del.onclick=()=>{ delete custom[name]; delete PRESETS[name]; favs=favs.filter(x=>x!==name); save('pr_custom',custom); save('pr_favs',favs); if(active===name) tweaked=true; render(); flash('Deleted',name); };
-        row.append(del); }
+        row.append(del); } else { const g=document.createElement('span'); g.className='pgap'; row.append(g); }
       box.append(row);
     });
     // "save these settings" appears once you've tweaked something
@@ -2277,9 +2282,9 @@ function notice(msg,ms=5000){
       } else {
         const f=document.createElement('form'); f.className='pname';
         let i=1; while(PRESETS['My preset '+i]) i++;
-        f.innerHTML=`<input maxlength="18" value="My preset ${i}" aria-label="Preset name"><button>Save</button><button type="button" class="x" aria-label="Cancel">×</button>`;
+        f.innerHTML=`<input maxlength="14" value="My preset ${i}" aria-label="Preset name"><button>Save</button><button type="button" class="x" aria-label="Cancel">×</button>`;
         const inp=f.querySelector('input');
-        f.onsubmit=e=>{ e.preventDefault(); let n=inp.value.trim().slice(0,18)||('My preset '+i);
+        f.onsubmit=e=>{ e.preventDefault(); let n=inp.value.trim().slice(0,14)||('My preset '+i);
           if(BUILTIN.includes(n)) n+=' (mine)';
           const p={}; KEYS.forEach(k=>p[k]=state[k]); custom[n]=p; PRESETS[n]=p; save('pr_custom',custom);
           naming=false; tweaked=false; active=n; render(); flash('Saved preset',n); };
