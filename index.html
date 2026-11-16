@@ -443,6 +443,8 @@
   .lact{display:flex;gap:10px;align-items:center;margin-top:20px} .lact[hidden]{display:none}
   .lghost{border:0;background:transparent;cursor:pointer;font:600 13.5px/1 inherit;font-family:inherit;color:var(--ink);padding:12px 18px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(30,25,21,.2)}
   html.dark .lghost{box-shadow:inset 0 0 0 1px rgba(255,235,210,.22)}
+  #view-room .hint2, #view-room .lnote{color:var(--ink);opacity:.82}
+  .lwarns{display:grid;gap:8px;margin-top:14px;max-width:440px} .lwarns .warn{margin:0;padding:9px 13px} .lwarns .warn svg{flex:none;margin-top:1px}
   .lnote{margin:18px 0 0;font-size:12.5px;color:var(--sub)}
   .lopen{display:inline-block;margin-top:8px;font-size:13px;font-weight:600;color:var(--ink);text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:1px;opacity:.8}
   html.listen #seg, html.listen .icons, html.listen .bottom .l>span:last-child{display:none}
@@ -450,13 +452,26 @@
   @media (min-width:761px) and (min-height:561px){
     .bottom{display:grid;grid-template-columns:1fr auto;align-items:end;row-gap:5px}
     .bottom .r{grid-column:2;grid-row:1;justify-content:flex-end}
-    .bottom .l{grid-column:2;grid-row:2;justify-content:flex-end;gap:16px;font-size:11.5px;opacity:.78}
+    .bottom .l{grid-column:2;grid-row:2;justify-content:flex-end;gap:16px;font-size:12px;font-weight:600}
     .bottom{margin-top:10px}
     .left{position:relative;z-index:3}
   }
   @media (min-width:761px) and (max-height:960px){ .reccard:not([hidden]) ~ .lr .lrw{display:none} }
   @media (min-width:761px) and (max-height:800px){ .lrcard{padding:6px 8px 6px 12px} .lrrow{min-height:30px} .lrrow+.lrrow{margin-top:2px} .lrb{padding:8px 12px} .lrcode{font-size:20px}
     .bottom{margin-top:6px;row-gap:3px} .warn{padding:6px 12px;font-size:12px;line-height:1.35} .warns{gap:10px} .panel{padding:12px 22px 6px} .lrw{display:none} .lr{margin-top:10px} .lrbtn{padding:8px 14px} .lrbtn small{display:none} }
+  /* copyright + mic status: bottom-right corner, beside the wordmark (desktop) */
+  .crfoot{display:none}
+  @media (min-width:761px) and (min-height:561px){
+    html:not(.crfoot-off) .crfoot{display:flex;flex-direction:column;align-items:flex-end;gap:5px;position:absolute;bottom:22px;text-align:right;
+      font-size:12.5px;font-weight:700;line-height:1.25;color:var(--ink);white-space:nowrap}
+    html.dark:not(.crfoot-off) .crfoot{text-shadow:0 1px 2px rgba(0,0,0,.5)}
+    .crfoot .crc i{font-style:normal}
+    .crfoot.narrow .crc i{display:none} .crfoot.narrow .crc span{display:block}
+    html:not(.crfoot-off) .bottom .l{display:none}
+    .rcol{margin-top:14px}
+    .cwrap>.panel,.trow+*{}
+  }
+  html.listen .crfoot .crm{display:none}
   /* shorter windows: tighten everything so the buttons and the wordmark stay on screen */
   @media (max-height:820px){
     .status{margin-top:16px;font-size:30px} .field{margin-top:14px;height:48px} .btn{height:38px}
@@ -623,6 +638,12 @@
         <form class="field lform" id="lForm"><input id="lCode" inputmode="numeric" pattern="[0-9 ]*" autocomplete="one-time-code" maxlength="7" placeholder="000 000" aria-label="Room code"><button class="btn" id="lJoin">Join</button></form>
         <div class="lact" id="lAct" hidden><button class="btn" id="lTap" hidden>Tap to listen</button><button class="lghost" id="lLeave">Leave room</button></div>
         <p class="lnote">You only listen. Your microphone is never used.</p>
+        <div class="lwarns">
+          <div class="warn" role="note"><svg width="20" height="18" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.2 19 16.8H1z" fill="#ffcc00" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/><rect x="9" y="6" width="2" height="6" rx="1" fill="#111"/><circle cx="10" cy="14.2" r="1.15" fill="#111"/></svg>
+            <span><b>A sudden shrill echo can happen.</b> A live mic can sometimes squeal. The app cuts it off automatically, but it may be loud for a moment.</span></div>
+          <div class="warn" role="note"><svg width="20" height="18" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.2 19 16.8H1z" fill="#ffcc00" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/><rect x="9" y="6" width="2" height="6" rx="1" fill="#111"/><circle cx="10" cy="14.2" r="1.15" fill="#111"/></svg>
+            <span><b>Keep headphone volume low to medium</b> to protect your ears, just in case.</span></div>
+        </div>
         <a class="lopen" href="./">Open Pocket Reverb to play your own guitar →</a>
         <audio id="lAudio" autoplay playsinline></audio>
       </div>
@@ -663,7 +684,7 @@
     </div>
 
     </div></div>
-    <div class="wmbar reveal d4" id="wmbar"><svg id="wm" aria-hidden="true"></svg></div>
+    <div class="wmbar reveal d4" id="wmbar"><svg id="wm" aria-hidden="true"></svg><div class="crfoot" id="crFoot"><span class="crm"><span class="dot"></span><span id="liveTxt2">Mic off</span></span><span class="crc"><span>© 2026 Parth Sarkar</span><i> · </i><span>All rights reserved</span></span></div></div>
   </div>
 </section>
 <div id="spacer" aria-hidden="true"></div>
@@ -1494,7 +1515,7 @@ addEventListener('pointerdown',e=>{
 /* status dot follows the mic */
 new MutationObserver(()=>{
   const on=$('power').classList.contains('on');
-  document.body.classList.toggle('live',on); $('liveTxt').textContent=on?'Listening':'Mic off';
+  document.body.classList.toggle('live',on); $('liveTxt').textContent=on?'Listening':'Mic off'; const l2=$('liveTxt2'); if(l2) l2.textContent=on?'Listening':'Mic off';
 }).observe($('power'),{attributes:true,attributeFilter:['class']});
 
 /* icon buttons say what they did */
@@ -1557,7 +1578,7 @@ const compactMQ=matchMedia('(max-width:760px), (max-height:560px)');
     const pinned=compactMQ.matches;
     let fs=pinned?Math.min(W*0.165, 64, innerHeight*0.14):Math.min(W*0.165, innerHeight*0.19);
     { const c=document.createElement('canvas').getContext('2d'); c.font=FONT.replace('100px',fs+'px');
-      const tw=c.measureText(TEXT).width - 0.06*fs*(TEXT.length-1); const fit=W*0.92; if(tw>fit) fs*=fit/tw; }
+      const tw=c.measureText(TEXT).width - 0.06*fs*(TEXT.length-1); const fit=pinned?W*0.92:Math.min(W*0.92,W-384); if(tw>fit) fs*=fit/tw; window.__wmTW=Math.min(tw,fit); try{ window.__crPlace&&__crPlace(); }catch(_){} }
     H=Math.round(fs*0.84);
     document.documentElement.style.setProperty('--wmH',(H+16)+'px');
     svg.setAttribute('width',W); svg.setAttribute('height',H); svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
@@ -2570,6 +2591,7 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
   setInterval(()=>{ if(!peer) return;
     if(out && (typeof ctx==='undefined' || out.c!==ctx)){ detach(); attach(); }
     if(out){ try{ out.dry.gain.value=state.dry?0:1; }catch(_){} } },1000);
+  addEventListener('pr-shrill',()=>{ for(const l of listeners.values()){ try{ l.conn.send({t:'shrill'}); }catch(_){} } });
   addEventListener('pagehide',()=>{ if(peer) end(false); });
   render();
 })();
@@ -2578,7 +2600,7 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
 (function(){
   if(!LISTEN) return;
   const au=$('lAudio'), form=$('lForm'), inp=$('lCode'), act=$('lAct'), badge=$('lBadge');
-  let peer=null, conn=null, call=null, actx=null, joined=false, timer=null, closing=false;
+  let peer=null, conn=null, call=null, actx=null, joined=false, timer=null, closing=false, shrillAt=0;
   const say=(a,b)=>{ $('lStatus').textContent=a; $('lHint').textContent=b||''; };
   const live=on=>{ badge.parentNode.classList.toggle('live',on); document.body.classList.toggle('live',on); };
   function reset(a,b,keepForm=true){
@@ -2604,7 +2626,8 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
     else if(d.t==='no'){ d.left>0 ? reset('Wrong code',`Check the code and try again. ${d.left} ${d.left===1?'try':'tries'} left.`) : reset('Too many wrong tries','Ask your friend for the code and open the link again.',false); inp.value=''; }
     else if(d.t==='full') reset('The room is full','Only a few friends can listen at once. Try again later.');
     else if(d.t==='locked') reset('Room is busy','Too many wrong codes were tried. Wait a minute and try again.');
-    else if(d.t==='live'){ live(!!d.on && !!au.srcObject); if(joined) d.on ? say('Listening live','You are hearing your friend play right now.') : say('Paused','Your friend stopped playing. Stay here, the sound comes back when they start.'); }
+    else if(d.t==='shrill'){ shrillAt=Date.now(); }
+    else if(d.t==='live'){ live(!!d.on && !!au.srcObject); if(joined) d.on ? say('Listening live','You are hearing your friend play right now.') : (Date.now()-shrillAt<4000 ? say('Paused','A shrill echo started on your friend\'s side, so the sound was cut to protect your ears. It comes back when they start again.') : say('Paused','Your friend stopped playing. Stay here, the sound comes back when they start.')); }
     else if(d.t==='end') reset('The room has ended','Thanks for listening.',false);
   }
   form.addEventListener('submit',async e=>{
@@ -2628,6 +2651,67 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
   addEventListener('pagehide',()=>{ try{ peer&&peer.destroy(); }catch(_){} });
   showView('room',true);
   setTimeout(()=>{ try{ inp.focus({preventScroll:true}); }catch(_){} },1200);
+})();
+
+
+/* ---------- copyright + mic status: tucked beside the wordmark on desktop ---------- */
+(function(){
+  const bar=$('wmbar'), f=$('crFoot'), content=$('content'), root=document.documentElement;
+  function place(){
+    if(matchMedia('(max-width:760px), (max-height:560px)').matches || !window.__wmTW){ return; }
+    const br=bar.getBoundingClientRect(), cr=content.getBoundingClientRect(), cs=getComputedStyle(bar);
+    const rightEdge=cr.right-parseFloat(getComputedStyle(content).paddingRight||0);
+    const inner=br.width-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+    const wmRight=br.left+parseFloat(cs.paddingLeft)+inner/2+__wmTW/2;
+    const avail=rightEdge-wmRight-22;
+    root.classList.toggle('crfoot-off',avail<128);
+    f.classList.toggle('narrow',avail<292);
+    f.style.right=Math.max(0,br.right-rightEdge)+'px';
+  }
+  window.__crPlace=place; addEventListener('resize',()=>setTimeout(place,60)); [300,1500,3500].forEach(t=>setTimeout(place,t));
+})();
+
+/* =====================================================================
+   Shrill echo guard. When a speaker feeds back into the mic, one pure
+   tone takes over and holds (or grows) instead of fading like a plucked
+   note. If that lasts a moment, switch the mic off straight away, to
+   protect the player's ears and anyone listening in the room.
+   ===================================================================== */
+(function(){
+  let an=null, c0=null, fb=null, tb=null, hist=[];
+  function tick(){
+    if(typeof ctx==='undefined' || !ctx || !nodes || !nodes.limiter || ctx.state!=='running'){ c0=null; an=null; hist.length=0; return; }
+    if(c0!==ctx){ c0=ctx; hist.length=0;
+      try{ an=ctx.createAnalyser(); an.fftSize=2048; an.smoothingTimeConstant=0; nodes.limiter.connect(an); fb=new Float32Array(an.frequencyBinCount); tb=new Float32Array(an.fftSize); }catch(_){ an=null; } }
+    if(!an) return;
+    an.getFloatTimeDomainData(tb); let r=0; for(let i=0;i<tb.length;i++) r+=tb[i]*tb[i]; const rms=Math.sqrt(r/tb.length);
+    const now=performance.now();
+    if(rms<.06){ hist.length=0; return; }
+    an.getFloatFrequencyData(fb);
+    const hz=ctx.sampleRate/an.fftSize, lo=Math.max(2,Math.round(150/hz)), hi=Math.min(fb.length-4,Math.round(10000/hz));
+    let pk=lo, tot=0; for(let i=lo;i<=hi;i++){ if(fb[i]>fb[pk]) pk=i; tot+=Math.pow(10,fb[i]/10); }
+    let band=0; for(let i=Math.max(lo,pk-3);i<=Math.min(hi,pk+3);i++) band+=Math.pow(10,fb[i]/10);
+    hist.push({t:now,bin:pk,db:fb[pk],rms,pure:band/(tot||1)});
+    while(hist.length && now-hist[0].t>1300) hist.shift();
+    const need = rms>.38 ? 420 : 720;                       // very loud: act faster
+    const w=hist.filter(h=>now-h.t<=need+70); if(w.length<Math.max(6,need/50*.7) || now-w[0].t<need-80) return;
+    const first=w[0], last=w[w.length-1];
+    const same=w.every(h=>Math.abs(h.bin-last.bin)<=2 && h.pure>=.8 && h.rms>=.1);
+    const top=Math.max(...w.map(h=>h.db)); const holding=last.db>=first.db-1 && last.db>=top-1.5 && w.every(h=>h.db>=first.db-3);   // a plucked note fades; an echo loop holds or grows
+    if(same && holding) kill(Math.round(last.bin*hz));
+  }
+  function kill(freq){
+    hist.length=0;
+    try{ if(nodes.master) nodes.master.gain.setValueAtTime(0,ctx.currentTime); }catch(_){}
+    try{ dispatchEvent(new Event('pr-shrill')); }catch(_){}
+    setTimeout(()=>{
+      try{ stop(); }catch(_){}
+      try{ setStatus('Shrill echo stopped','The mic was switched off to protect your ears.'); }catch(_){}
+      try{ notice('Shrill echo detected, so the mic was switched off. Use headphones, or lower Volume and How much reverb, then tap Start.',9000); }catch(_){}
+    },60);
+  }
+  setInterval(tick,50);
+  window.__shrillKill=kill;
 })();
 
 </script>
