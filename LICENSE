@@ -31,3 +31,5 @@ For permission requests, contact Parth Sarkar.
 
 Third-party components: lame.min.js (lamejs MP3 encoder) is licensed under
 the GNU LGPL v3; see lame.LICENSE.txt. It is not covered by this notice.
+peerjs.min.js (PeerJS, used for the listening room) is licensed under the MIT
+License; see peerjs.LICENSE.txt. It is not covered by this notice.
