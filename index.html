@@ -971,6 +971,9 @@ const PRESETS = {
   "Dreamy":     {mix:65, decay:80, pre:150, tone:4500, echo:30, time:500, fb:50},
   "Echo":       {mix:20, decay:10, pre:0,   tone:6000, echo:60, time:350, fb:35},
   "Slapback":   {mix:15, decay:6,  pre:0,   tone:6000, echo:55, time:110, fb:10},
+  // clean sound, no reverb: what your friends hear in a room is simply what you play
+  "Just guitar":    {mix:0, decay:8, pre:0, tone:7000, echo:0, time:120, fb:0},
+  "Guitar + voice": {mix:0, decay:8, pre:0, tone:7000, echo:0, time:120, fb:0, focus:false, gate:3,  nr:30},
 };
 let state = {vol:250, ...PRESETS["Reverb 1"], gain:150, dry:false, gate:10, focus:true, nr:60, apple:false, mic:''};
 let ctx, stream, nodes = {}, irTimer, raf, measuring = null, noiseLearned = false;
@@ -1255,9 +1258,9 @@ function stop(){
 }
 
 /* level bar + "hearing you" */
-let hearUntil=0, hearShown='';
+let hearUntil=0, hearShown='', meterW=-1;
 function lightPoles(level, hearing){
-  $('meterFill').style.width=Math.min(100,level*100)+'%';
+  const mw=Math.round(Math.min(100,level*100)*2)/2; if(mw!==meterW){ meterW=mw; $('meterFill').style.width=mw+'%'; }   // only touch the page when the bar actually moves
   const now=performance.now(); if(hearing) hearUntil=now+5000;
   const live=!!ctx && ctx.state==='running', on=live && now<hearUntil, txt=!ctx?'waiting':!live?'paused':on?'hearing you':'quiet';
   if(txt===hearShown) return; hearShown=txt;
@@ -1337,10 +1340,15 @@ function setVal(k,v){
   if(k==='decay') refreshIR();
 }
 function markPreset(name){ [...$('tabs').children].forEach(b=>b.classList.toggle('active', b.dataset.name===name)); }
+let inputKeep=null;
 function choosePreset(name){
-  const old=state.decay; Object.assign(state,PRESETS[name]);
+  const old=state.decay, pz=PRESETS[name], direct=!!pz && ('focus' in pz);
+  if(direct && !inputKeep) inputKeep={focus:state.focus,gate:state.gate,nr:state.nr};       // remember your own mic settings
+  if(!direct && inputKeep){ Object.assign(state,inputKeep); inputKeep=null; }                // and put them back for reverb presets
+  Object.assign(state,pz);
   markPreset(name); applyAll(); if(state.decay!==old) refreshIR();
   flash('Preset', name);
+  if(name==='Just guitar'||name==='Guitar + voice'){ try{ notice(name==='Guitar + voice'?'Clean guitar and voice, no reverb. Friends in your room hear exactly what you play and sing.':'Clean guitar, no reverb. Friends in your room hear exactly what you play.',4500); }catch(_){} }
 }
 
 /* ---------- wiring ---------- */
@@ -2033,7 +2041,9 @@ const TUNE={cents:0, target:0, amp:0, ampT:0, ok:false, live:false, phase:0};
   o+=`<g id="tMark" class="t-mark"><path d="M0 -14 L8 -26 H-8 Z"/><rect x="-2" y="-12" width="4" height="22" rx="2"/></g>`;
   g.setAttribute('viewBox',`0 0 ${W} ${H}`); g.innerHTML=o;
   const str=$('tString'), mark=$('tMark');
+  const tView=$('view-tuner');
   function frame(){
+    if(document.hidden || !tView.classList.contains('on')){ requestAnimationFrame(frame); return; }
     TUNE.cents += (TUNE.target-TUNE.cents)*0.25;
     TUNE.amp += (TUNE.ampT-TUNE.amp)*0.12;
     TUNE.phase += 0.9;
@@ -2175,7 +2185,7 @@ showView(location.hash.slice(1),true);
     return lv;
   }
   // --- edge shape ---
-  let level=0, t=0, last=performance.now(), lastDraw=0, drops=[];
+  let level=0, t=0, last=performance.now(), lastDraw=0, lastRead=0, drops=[];
   const bandAt=u=>{ const f=u*(N-1), i=Math.floor(f), w=f-i; return sm[i]*(1-w)+(sm[Math.min(N-1,i+1)]||0)*w; };
   function edgeY(x){
     const span=W-2*R; if(x<=R||x>=W-R) return AM;
@@ -2215,6 +2225,8 @@ showView(location.hash.slice(1),true);
   function frame(now){
     requestAnimationFrame(frame);
     if(document.hidden || !W || !document.body.classList.contains('ready')) { staticOn=false; return; }
+    if(level<.008 && !drops.length && staticOn && now-lastRead<80) return;
+    lastRead=now;
     const lv=taps.size?Math.min(1,read()*12):0;
     for(let k=0;k<N;k++) sm[k]+= (bands[k]-sm[k])*(bands[k]>sm[k]?.6:.12);
     const prev=level; level+=(lv-level)*(lv>level?.55:.07);
