@@ -223,6 +223,28 @@
   .pswitch.on .ptrack{background:rgba(255,255,255,.28)}
   .pswitch.on .pknob{transform:translateX(16px)}
   .pswitch:active .pknob{width:26px}
+  /* recorder */
+  .recbtn{flex:none;display:flex;align-items:center;gap:7px;height:42px;padding:0 14px;border:0;border-radius:999px;cursor:pointer;
+    font:600 14px/1 inherit;font-family:inherit;color:#fff;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);transition:background .25s,opacity .25s}
+  .recbtn i{width:11px;height:11px;border-radius:50%;background:#ff4b4b;box-shadow:0 0 0 2px rgba(255,75,75,.25)}
+  .recbtn:disabled{opacity:.4;cursor:default}
+  .recbtn.on{background:rgba(255,60,60,.85);box-shadow:inset 0 0 0 1px rgba(255,255,255,.4), 0 0 14px rgba(255,60,60,.45)}
+  .recbtn.on i{background:#fff;border-radius:2px;animation:recPulse 1s ease-in-out infinite}
+  .recbtn span{font-variant-numeric:tabular-nums;min-width:30px;text-align:left}
+  @keyframes recPulse{50%{opacity:.35}}
+  .reccard{display:flex;align-items:center;gap:10px;margin:12px 0 0;padding:8px 8px 8px 8px;border-radius:999px;
+    background:rgba(255,255,255,.32);box-shadow:inset 0 0 0 1px rgba(255,255,255,.65), 0 8px 20px -10px rgba(40,25,10,.4);animation:viewIn .4s ease}
+  .reccard[hidden]{display:none}
+  html.dark .reccard{background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,235,210,.14)}
+  .rplay{flex:none;width:38px;height:38px;border-radius:50%;border:0;display:grid;place-items:center;color:#fff;cursor:pointer;background:#17120f}
+  html.dark .rplay{background:#f3ede6;color:#17120f}
+  .rmid{flex:1;min-width:0}
+  .rtop{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px} .rtop b{font-weight:600} .rtop span{color:var(--sub);font-variant-numeric:tabular-nums}
+  .rbar{height:5px;border-radius:3px;background:rgba(120,100,85,.25);cursor:pointer;overflow:hidden}
+  .rbar i{display:block;height:100%;width:0;background:var(--ink);border-radius:3px}
+  .rsave{flex:none;height:36px;padding:0 16px;border:0;border-radius:999px;font:600 13px/1 inherit;font-family:inherit;cursor:pointer;color:#fff;background:linear-gradient(180deg,#43cf6c,#25a84d)}
+  .rdel{flex:none;width:36px;height:36px;border-radius:50%;border:0;display:grid;place-items:center;cursor:pointer;color:var(--ink);background:rgba(255,255,255,.4);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+  html.dark .rdel{background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,235,210,.14)}
   /* headphones warning */
   .warn{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 0;padding:11px 14px;border-radius:16px;font-size:12.5px;line-height:1.45;color:var(--ink);
     background:rgba(255,255,255,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
@@ -389,6 +411,8 @@
     .icons{flex:1 1 100%;justify-content:space-between;gap:6px;padding:5px 6px}
     .evening{flex:1 1 100%;justify-content:space-between}
     .ico{flex:1;width:auto;height:40px}
+    .recbtn{padding:0 11px}
+    .field{padding-left:16px;gap:8px}
     .ico .tip{bottom:50px}
     .ico:first-child .tip{left:0;transform:none}
     .ico:last-child .tip{left:auto;right:0;transform:none}
@@ -436,9 +460,17 @@
         <div class="status fade reveal d1" id="status">Ready when you are</div>
         <div class="field reveal d2">
           <div class="lvl"><div class="row"><span>Input level</span><span id="hear">waiting</span></div><div class="meter"><i id="meterFill"></i></div></div>
+          <button class="recbtn" id="rec" disabled title="Record what you hear (guitar + reverb)"><i></i><span id="recL">Rec</span></button>
           <button class="pswitch" id="power" role="switch" aria-checked="false"><span id="powerL" class="fade">Start</span><span class="ptrack"><span class="pknob"></span></span></button>
         </div>
         <div class="hint fade reveal d2" id="statusHint">Put on headphones, then tap Start.</div>
+        <div class="reccard" id="recCard" hidden>
+          <button class="rplay" id="rPlay" aria-label="Play recording"><svg width="14" height="14" viewBox="0 0 14 14"><path id="rIcon" d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg></button>
+          <div class="rmid"><div class="rtop"><b>Your session</b><span id="rTime">0:00</span></div><div class="rbar" id="rBar"><i id="rProg"></i></div></div>
+          <button class="rsave" id="rSave">Save</button>
+          <button class="rdel" id="rDel" aria-label="Delete recording"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button>
+          <audio id="rAudio" preload="metadata"></audio>
+        </div>
         <button class="pill ai reveal d3" id="learn"><span class="lens"></span><canvas class="bloom"></canvas><canvas class="ring"></canvas><span id="learnL" class="fade">Learn noise</span></button>
         <div class="warn reveal d3" role="note"><svg width="20" height="18" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 1.2 19 16.8H1z" fill="#ffcc00" stroke="#e0a800" stroke-width="1" stroke-linejoin="round"/><rect x="9" y="6" width="2" height="6" rx="1" fill="#111"/><circle cx="10" cy="14.2" r="1.15" fill="#111"/></svg>
           <span class="wl"><b>Headphones recommended.</b> On a phone or laptop speaker the mic can hear its own reverb and build into a loud, shrill echo. After you tap Start, tap <b>Learn noise</b> straight away.</span><span class="ws"><b>Headphones recommended</b> — speakers can cause a shrill echo. Tap <b>Learn noise</b> right after Start.</span></div>
@@ -1996,6 +2028,86 @@ showView(location.hash.slice(1),true);
   }
   requestAnimationFrame(frame);
   window.__edgeStatic=()=>{ staticOn=false; };
+})();
+
+/* =====================================================================
+   Recorder: captures what you hear (your guitar from the mic + the reverb)
+   into memory. Nothing is uploaded. Save = share sheet on iPhone, or a
+   download on computers. Delete throws it away.
+   ===================================================================== */
+(function(){
+  const recBtn=$('rec'), recL=$('recL'), card=$('recCard'), au=$('rAudio');
+  const MAX_MIN=30;
+  let mr=null, chunks=[], t0=0, tick=null, blob=null, url=null, recNodes=null, ext='webm', mime='';
+  const fmt=s=>{ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+  function pickType(){
+    const opts=[['audio/mp4','m4a'],['audio/mp4;codecs=mp4a.40.2','m4a'],['audio/webm;codecs=opus','webm'],['audio/webm','webm'],['audio/ogg;codecs=opus','ogg']];
+    if(!window.MediaRecorder) return null;
+    for(const [t,e] of opts) if(MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) return [t,e];
+    return ['',''];
+  }
+  function setReady(){ recBtn.disabled=!(ctx && nodes && nodes.limiter) || !window.MediaRecorder; }
+  new MutationObserver(()=>{ setReady(); if(!$('power').classList.contains('on') && mr) stopRec(); }).observe($('power'),{attributes:true,attributeFilter:['class']});
+  setReady();
+  function startRec(){
+    const pt=pickType(); if(!pt){ showErr('Recording is not supported in this browser.'); return; }
+    discard();
+    // mix: the reverb you hear + your guitar as the mic hears it (unless "hear my guitar" already adds it)
+    const dst=ctx.createMediaStreamDestination(), bus=ctx.createGain(), dry=ctx.createGain(), lim=ctx.createDynamicsCompressor();
+    lim.threshold.value=-8; lim.ratio.value=16; lim.attack.value=.003; lim.release.value=.2;
+    dry.gain.value=state.dry?0:1.0;
+    nodes.limiter.connect(bus); nodes.gateNode.connect(dry); dry.connect(bus); bus.connect(lim); lim.connect(dst);
+    recNodes={bus,dry,lim};
+    try{ mr=new MediaRecorder(dst.stream, pt[0]?{mimeType:pt[0],audioBitsPerSecond:160000}:undefined); }
+    catch(e){ try{ mr=new MediaRecorder(dst.stream); }catch(e2){ showErr('Could not start recording.'); return; } }
+    mime=mr.mimeType||pt[0]||'audio/webm'; ext=/mp4|aac|m4a/.test(mime)?'m4a':/ogg/.test(mime)?'ogg':'webm';
+    chunks=[]; mr.ondataavailable=e=>{ if(e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop=finish;
+    mr.start(1000); t0=performance.now();
+    recBtn.classList.add('on'); recL.textContent='0:00'; recBtn.title='Stop recording';
+    tick=setInterval(()=>{ const s=(performance.now()-t0)/1000; recL.textContent=fmt(s); if(s>MAX_MIN*60) stopRec(); },250);
+    flash('Recording','●');
+  }
+  function stopRec(){ if(mr && mr.state!=='inactive') mr.stop(); clearInterval(tick); recBtn.classList.remove('on'); recL.textContent='Rec'; recBtn.title='Record what you hear (guitar + reverb)'; }
+  function finish(){
+    try{ recNodes.bus.disconnect(); recNodes.dry.disconnect(); recNodes.lim.disconnect(); nodes.limiter&&nodes.limiter.disconnect(recNodes.bus); }catch(_){}
+    try{ nodes.gateNode&&nodes.gateNode.disconnect(recNodes.dry); }catch(_){}
+    recNodes=null;
+    const dur=(performance.now()-t0)/1000; mr=null;
+    if(!chunks.length){ flash('Recording','nothing captured'); return; }
+    blob=new Blob(chunks,{type:mime}); chunks=[]; url=URL.createObjectURL(blob);
+    au.src=url; card.hidden=false; $('rTime').textContent=fmt(dur); au.dataset.dur=dur;
+    flash('Recorded', fmt(dur));
+  }
+  function discard(){
+    au.pause(); au.removeAttribute('src'); au.load();
+    if(url) URL.revokeObjectURL(url); url=null; blob=null; card.hidden=true; $('rProg').style.width='0';
+  }
+  recBtn.addEventListener('click',()=> mr ? stopRec() : startRec());
+  // player
+  const icon=$('rIcon'), PLAY='M3 1.5v11l9-5.5z', PAUSE='M3 1.5h3v11H3zM8 1.5h3v11H8z';
+  $('rPlay').addEventListener('click',()=>{ if(au.paused) au.play().catch(()=>{}); else au.pause(); });
+  au.addEventListener('play',()=>icon.setAttribute('d',PAUSE));
+  au.addEventListener('pause',()=>icon.setAttribute('d',PLAY));
+  au.addEventListener('ended',()=>{ icon.setAttribute('d',PLAY); });
+  au.addEventListener('timeupdate',()=>{ const d=isFinite(au.duration)&&au.duration>0?au.duration:+au.dataset.dur||1;
+    $('rProg').style.width=Math.min(100,au.currentTime/d*100)+'%'; $('rTime').textContent=fmt(au.currentTime)+' / '+fmt(d); });
+  $('rBar').addEventListener('click',e=>{ const r=e.currentTarget.getBoundingClientRect(), d=isFinite(au.duration)&&au.duration>0?au.duration:+au.dataset.dur||0; if(d) au.currentTime=(e.clientX-r.left)/r.width*d; });
+  // save: share sheet where available (iPhone), otherwise a normal download
+  $('rSave').addEventListener('click',async()=>{
+    if(!blob) return;
+    const d=new Date(), pad=n=>String(n).padStart(2,'0');
+    const name=`Pocket Reverb ${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}-${pad(d.getMinutes())}.${ext}`;
+    const file=new File([blob],name,{type:blob.type});
+    if(navigator.canShare && navigator.canShare({files:[file]}) && matchMedia('(hover: none)').matches){
+      try{ await navigator.share({files:[file],title:'Pocket Reverb session'}); return; }catch(e){ if(e.name==='AbortError') return; }
+    }
+    const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    flash('Saved',name);
+  });
+  $('rDel').addEventListener('click',()=>{ discard(); flash('Recording','deleted'); });
+  addEventListener('beforeunload',e=>{ if(blob||mr){ e.preventDefault(); e.returnValue=''; } });
+  setInterval(setReady,1000);
 })();
 
 </script>
