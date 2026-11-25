@@ -473,6 +473,14 @@
     .cwrap>.panel,.trow+*{}
   }
   html.listen .crfoot .crm{display:none}
+  /* ===== beta: chord search ===== */
+  .cfind{display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;margin:0 0 10px;border-radius:999px;flex:none;color:var(--sub);
+    background:rgba(255,255,255,.3);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+  html.dark .cfind{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.13)}
+  .cfind input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:500 14px/1 inherit;font-family:inherit}
+  .cfind input::placeholder{color:var(--sub);opacity:.9}
+  .cfind:focus-within{box-shadow:inset 0 0 0 1.5px rgba(30,25,21,.35)} html.dark .cfind:focus-within{box-shadow:inset 0 0 0 1.5px rgba(255,235,210,.35)}
+  .cnone{grid-column:1/-1;font-size:13px;color:var(--sub);padding:14px 4px}
   /* ===== beta: chords from a song ===== */
   .sgbox{padding:14px 16px 14px;border-radius:22px;background:rgba(255,255,255,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6), 0 10px 24px -16px rgba(40,25,10,.45);margin:clamp(8px,1.6vh,18px) 0 4px}
   html.dark .sgbox{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.13)}
@@ -684,7 +692,7 @@
           <button class="btn wide" id="progPlay" disabled>▶ Play progression</button>
         </div>
         <div class="panel cpanel">
-          <div class="cats" id="cats"></div>
+          <label class="cfind" id="cfind"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="cfindIn" autocomplete="off" spellcheck="false" placeholder="Find a chord, like F#m or Bb7" aria-label="Find a chord"></label><div class="cats" id="cats"></div>
           <div class="cgrid" id="cgrid"></div>
           <div class="song" id="song" hidden>
             <div class="sgtitle" id="sgTitle"></div>
@@ -2809,6 +2817,135 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
   window.__shrillKill=kill;
 })();
 
+
+
+/* =====================================================================
+   BETA · Full chord library
+   12 roots x 17 chord types. Open shapes where guitarists use them,
+   movable barre shapes (root on the low E or A string) everywhere else.
+   ===================================================================== */
+(function(){
+  const ROOTS=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  const ALIAS={'Db':'C#','D#':'Eb','Gb':'F#','G#':'Ab','A#':'Bb'};
+  const TYPES=['','m','7','maj7','m7','sus2','sus4','add9','6','m6','9','7sus4','dim','dim7','m7b5','aug','5'];
+
+  // hand-picked open shapes: [frets, fingers]
+  const OPEN={
+    'C':['x32010','032010'],'C7':['x32310','032410'],'Cmaj7':['x32000','032000'],'Csus4':['x33011','034011'],'Cadd9':['x32033','021034'],
+    'C6':['x32210','042310'],'C9':['x32333','021333'],'C7sus4':['x33311','023411'],'Caug':['x32110','032110'],
+    'D':['xx0232','000132'],'Dm':['xx0231','000231'],'D7':['xx0212','000213'],'Dmaj7':['xx0222','000123'],'Dm7':['xx0211','000211'],
+    'Dsus2':['xx0230','000130'],'Dsus4':['xx0233','000134'],'D6':['xx0202','000102'],'Dm6':['xx0201','000201'],'D7sus4':['xx0213','000213'],
+    'Ddim':['xx0131','000131'],'Ddim7':['xx0101','000102'],'Dm7b5':['xx0111','000111'],'Daug':['xx0332','000231'],'D5':['xx023x','000130'],
+    'E':['022100','023100'],'Em':['022000','023000'],'E7':['020100','020100'],'Emaj7':['021100','031200'],'Em7':['020000','020000'],
+    'Esus2':['024400','013400'],'Esus4':['022200','023400'],'Eadd9':['024100','024100'],'E6':['022120','023140'],'Em6':['022020','023040'],
+    'E9':['020102','020103'],'E7sus4':['020200','020300'],'Edim7':['012020','012030'],'Em7b5':['010030','010030'],'Eaug':['032110','043120'],'E5':['022xxx','013000'],
+    'Fmaj7':['xx3210','003210'],'Fsus2':['xx3011','003011'],'Fadd9':['xx3213','003214'],'F6':['xx3231','003141'],
+    'G':['320003','210003'],'G7':['320001','320001'],'Gmaj7':['320002','210003'],'Gsus2':['300033','100034'],'Gsus4':['330013','230014'],
+    'Gadd9':['320203','210304'],'G6':['320000','210000'],'G7sus4':['330011','340011'],'Gaug':['321003','321004'],
+    'A':['x02220','001230'],'Am':['x02210','002310'],'A7':['x02020','001020'],'Amaj7':['x02120','002130'],'Am7':['x02010','002010'],
+    'Asus2':['x02200','002300'],'Asus4':['x02230','001230'],'Aadd9':['x02420','001420'],'A6':['x02222','001111'],'Am6':['x02212','002314'],
+    'A9':['x02423','001324'],'A7sus4':['x02030','002030'],'Adim':['x0121x','001320'],'Adim7':['x01212','001324'],'Am7b5':['x01213','001324'],
+    'Aaug':['x03221','004231'],'A5':['x022xx','001300'],
+    'B7':['x21202','021304'],'Bm7':['x20202','020304'],
+  };
+  // movable shapes: offsets from the root fret n (null = muted), fingers, lowest offset
+  const E_SH={ // root on the low E string
+    '':[[0,2,2,1,0,0],'134211'],'m':[[0,2,2,0,0,0],'134111'],'7':[[0,2,0,1,0,0],'131211'],'m7':[[0,2,0,0,0,0],'131111'],
+    'maj7':[[0,null,1,1,0,null],'203410'],'sus4':[[0,2,2,2,0,0],'123411'],'7sus4':[[0,2,0,2,0,0],'131411'],
+    'add9':[[0,2,4,1,0,0],'134211'],'5':[[0,2,2,null,null,null],'134000'],'m6':[[0,2,2,0,2,0],'123141'],
+    'sus2':[[0,2,4,4,0,0],'123411'],'6':[[0,null,-1,1,0,null],'201430'],'9':[[0,null,0,1,0,2],'101214'],
+    'dim':[[0,1,2,0,null,null],'123100'],'dim7':[[0,null,-1,0,-1,null],'201310'],'m7b5':[[0,null,0,0,-1,null],'203410'],
+    'aug':[[0,null,2,1,1,null],'104230'],
+  };
+  const A_SH={ // root on the A string
+    '':[[null,0,2,2,2,0],'012341'],'m':[[null,0,2,2,1,0],'013421'],'7':[[null,0,2,0,2,0],'013141'],'m7':[[null,0,2,0,1,0],'013121'],
+    'maj7':[[null,0,2,1,2,0],'013241'],'sus2':[[null,0,2,2,0,0],'013411'],'sus4':[[null,0,2,2,3,0],'012341'],'7sus4':[[null,0,2,0,3,0],'013141'],
+    '6':[[null,0,2,2,2,2],'013333'],'m6':[[null,0,2,2,1,2],'013324'],'9':[[null,0,-1,0,0,0],'021333'],
+    'dim':[[null,0,1,2,1,null],'012430'],'dim7':[[null,0,1,-1,1,null],'023140'],'m7b5':[[null,0,1,0,1,null],'013240'],
+    'aug':[[null,0,-1,-2,-2,null],'032110'],'add9':[[null,0,-1,-3,0,0],'032144'],'5':[[null,0,2,2,null,null],'013400'],
+    'add9b':[[null,0,2,4,2,0],'012431'],
+  };
+  function place(sh,n){
+    if(!sh) return null; const [off,fing]=sh;
+    const fr=off.map(o=>o===null?-1:o+n);
+    if(fr.some(f=>f<-1||f>9) || fr.some((f,i)=>off[i]!==null&&f<0)) return null;
+    return [fr.map(f=>f<0?'x':String(f)).join(''),[...fing].map((c,i)=>fr[i]===0?'0':c).join('')];
+  }
+  function build(pc,q){
+    const nE=(pc-4+12)%12, nA=(pc-9+12)%12, opts=[];
+    for(const n of [nE,nE+12]){ const r=place(E_SH[q],n); if(r) opts.push(r); }
+    for(const n of [nA,nA+12]){ const r=place(A_SH[q],n); if(r) opts.push(r); const r2=place(A_SH[q+'b'],n); if(r2) opts.push(r2); }
+    if(!opts.length) return null;
+    // the shape lowest on the neck wins
+    const hi=s=>Math.max(...[...s].filter(c=>c!=='x').map(Number));
+    opts.sort((a,b)=>hi(a[0])-hi(b[0])); return opts[0];
+  }
+  let added=0;
+  ROOTS.forEach((r,pc)=>TYPES.forEach(q=>{
+    const name=r+q; if(CHORDS[name]) return;
+    const s=OPEN[name]||build(pc,q); if(!s) return;
+    CHORDS[name]=s[0]; FINGERS[name]=s[1]; added++;
+  }));
+  // existing open overrides that were missing from the old library
+  for(const k in OPEN){ if(!CHORDS[k]){ CHORDS[k]=OPEN[k][0]; FINGERS[k]=OPEN[k][1]; } }
+
+  // categories: every type shows all 12 keys
+  const byType=t=>ROOTS.map(r=>r+t).filter(n=>CHORDS[n]);
+  const NEW={
+    'Major':byType(''),'Minor':byType('m'),'7th':byType('7'),'Maj7':byType('maj7'),'m7':byType('m7'),
+    'Sus':ROOTS.flatMap(r=>[r+'sus2',r+'sus4']).filter(n=>CHORDS[n]),
+    'Add9 & 6':ROOTS.flatMap(r=>[r+'add9',r+'6',r+'m6']).filter(n=>CHORDS[n]),
+    '9 & 7sus4':ROOTS.flatMap(r=>[r+'9',r+'7sus4']).filter(n=>CHORDS[n]),
+    'Dim & aug':ROOTS.flatMap(r=>[r+'dim',r+'dim7',r+'m7b5',r+'aug']).filter(n=>CHORDS[n]),
+    'Power':byType('5'),
+  };
+  Object.keys(CATS).forEach(k=>delete CATS[k]); Object.assign(CATS,NEW);
+
+  // typing a chord: understands C#/Db, "F# minor", "F#min", "Bbmaj7", "Asus", "Cdim7", "Bm7b5"…
+  window.normChord=normChord=function(t){
+    t=String(t||'').trim(); if(!t) return null;
+    const m=t.match(/^([A-Ga-g])\s*([#b♯♭]?)\s*(.*)$/); if(!m) return null;
+    let root=m[1].toUpperCase()+(m[2]==='♯'?'#':m[2]==='♭'?'b':m[2]);
+    root=ALIAS[root]||root; if(root==='Cb') root='B'; if(root==='Fb') root='E'; if(root==='E#') root='F'; if(root==='B#') root='C';
+    let q=m[3].replace(/\s+/g,'');
+    q=q.replace(/^(major7|maj7|ma7|M7|Δ7|Δ)$/,'maj7').replace(/^(minor|min|mi|-)(?=$|[0-9])/i,'m').replace(/^(major|maj|M)$/,'')
+       .replace(/^m7-5$|^ø7?$|^half-?dim(inished)?$/i,'m7b5').replace(/^(o|°|diminished)$/i,'dim').replace(/^(o7|°7)$/i,'dim7')
+       .replace(/^(\+|augmented)$/i,'aug').replace(/^sus$/i,'sus4').replace(/^(add2)$/i,'add9').replace(/^(power)$/i,'5').replace(/^m6$/i,'m6');
+    if(/^M/.test(q) && q!=='M') q=q.replace(/^M/,'maj');
+    const exact=root+q; if(CHORDS[exact]) return exact;
+    const k=Object.keys(CHORDS).find(k=>k.toLowerCase()===exact.toLowerCase()); return k||null;
+  };
+
+  // search box: type a chord and see it at once
+  const box=document.getElementById('cfind'), inp=document.getElementById('cfindIn');
+  if(box&&inp){
+    let before=null;
+    inp.addEventListener('input',()=>{
+      const v=inp.value.trim();
+      if(!v){ if(before){ curCat=before; before=null; } renderCats(); renderGrid(); return; }
+      if(curCat!=='Search') before=curCat;
+      const k=normChord(v); const r=v.match(/^([A-Ga-g])\s*([#b♯♭]?)/);
+      let list=[];
+      if(k) list.push(k);
+      if(r){ let root=r[1].toUpperCase()+(r[2]==='♯'?'#':r[2]==='♭'?'b':r[2]); root=ALIAS[root]||root;
+        const rest=v.slice(r[0].length).replace(/\s+/g,'').toLowerCase();
+        const want=rest.replace(/^minor|^min/,'m'), minorish=/^m(?!a)/.test(want);
+        TYPES.forEach(q=>{ const n=root+q; if(!CHORDS[n] || n===k) return; if(minorish && q.startsWith('maj')) return; if(!rest || q.toLowerCase().startsWith(want)) list.push(n); }); }
+      window.__search=list.slice(0,12); curCat='Search'; renderCats(); renderGrid();
+    });
+  }
+  const oldRC=renderCats, oldRG=renderGrid;
+  renderCats=function(){ oldRC(); if(curCat==='Search'){ document.querySelectorAll('#cats button').forEach(b=>b.classList.remove('on')); } else if(inp && inp.value){ inp.value=''; } };
+  renderGrid=function(){
+    if(curCat==='Search'){ if(window.songShow) songShow(false); const g=document.getElementById('cgrid'); g.innerHTML='';
+      const l=window.__search||[]; if(!l.length){ g.innerHTML='<div class="cnone">No chord by that name. Try F#m, Bb7 or Cadd9.</div>'; return; }
+      l.forEach(n=>g.appendChild(chordCard(n))); return; }
+    oldRG();
+  };
+  if(!CATS[curCat]) curCat='Major';
+  renderCats(); renderGrid();
+  window.__chordCount=Object.keys(CHORDS).length; window.__chordAdded=added;
+})();
 
 
 /* =====================================================================
