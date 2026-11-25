@@ -481,6 +481,13 @@
   .cfind input::placeholder{color:var(--sub);opacity:.9}
   .cfind:focus-within{box-shadow:inset 0 0 0 1.5px rgba(30,25,21,.35)} html.dark .cfind:focus-within{box-shadow:inset 0 0 0 1.5px rgba(255,235,210,.35)}
   .cnone{grid-column:1/-1;font-size:13px;color:var(--sub);padding:14px 4px}
+  /* ===== beta: frosted acrylic dots ===== */
+  .gd-base{fill:rgba(250,248,245,.6)} html.dark .gd-base{fill:rgba(52,48,45,.95)}
+  .gd-face{fill:rgba(250,248,245,.86)}
+  html.dark .gd-face{fill:rgba(236,231,224,.52)}
+  .hl i{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 10%,rgba(255,255,255,.78)),color-mix(in srgb,var(--c) 42%,rgba(255,255,255,.6)))!important;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 85%,transparent), 0 1.4px 0 color-mix(in srgb,var(--c) 85%,#000 5%), 1px 3px 4px color-mix(in srgb,var(--c) 32%,transparent)!important}
+  html.dark .hl i{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 14%,rgba(236,230,222,.34)),color-mix(in srgb,var(--c) 48%,rgba(236,230,222,.24)))!important}
   /* ===== beta: chords from a song ===== */
   .sgbox{padding:14px 16px 14px;border-radius:22px;background:rgba(255,255,255,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6), 0 10px 24px -16px rgba(40,25,10,.45);margin:clamp(8px,1.6vh,18px) 0 4px}
   html.dark .sgbox{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.13)}
@@ -2008,11 +2015,8 @@ function diagram(name){
   }
   bars.forEach(br=>{ const yb=y0+(br.fret-base+.5)*rh;
     const bx=sx(br.a)-6.2, bw=sx(br.b)-sx(br.a)+12.4;
-    o+=`<rect x="${bx}" y="${yb-5.4}" width="${bw}" height="12.4" rx="6.2" fill="${FCOL[br.fi]}" opacity=".75" filter="url(#dglow)"/>`;
-    o+=`<rect x="${bx}" y="${yb-6.2}" width="${bw}" height="12.4" rx="6.2" fill="rgba(255,255,255,.52)"/>`;
-    o+=`<rect x="${bx}" y="${yb-6.2}" width="${bw}" height="12.4" rx="6.2" fill="url(#fb${br.fi})"/>`;
-    o+=`<rect x="${bx+.5}" y="${yb-5.7}" width="${bw-1}" height="11.4" rx="5.7" fill="none" stroke="rgba(255,255,255,.95)" stroke-width=".9"/>`;
-    o+=`<rect x="${bx+4}" y="${yb-4.2}" width="${bw-8}" height="1.6" rx=".8" fill="#fff" opacity=".85"/>`; });
+    o+=glassBar(bx,yb,bw,br.fi);
+  });
   f.forEach((v,i)=>{
     const x=sx(i);
     if(v<0){ o+=`<path class="cd-x" stroke-width="1.4" stroke-linecap="round" d="M${x-3.5} ${y0-14.5} l7 7 M${x+3.5} ${y0-14.5} l-7 7"/>`; return; }
@@ -2817,6 +2821,41 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
   window.__shrillKill=kill;
 })();
 
+
+/* =====================================================================
+   BETA · Frosted acrylic finger dots (no glow)
+   A matte, lightly tinted face, a crisp coloured edge, the disc's
+   coloured side showing underneath and a soft coloured shadow.
+   ===================================================================== */
+// function declarations are hoisted, so the setup runs on first use, not in order
+function frostDefs(){
+  if(document.getElementById('fsh')) return;
+  const d=document.createElementNS('http://www.w3.org/2000/svg','svg'); d.setAttribute('width',0); d.setAttribute('height',0); d.style.position='absolute';
+  d.innerHTML='<defs>'+['#ffffff','#f2564f','#f2bd2a','#4c86f0','#3cc46e'].map((c,i)=>
+    `<linearGradient id="ff${i}" x1=".15" y1=".05" x2=".85" y2=".95"><stop offset="0" stop-color="${c}" stop-opacity="${i?'.05':'.0'}"/><stop offset="1" stop-color="${c}" stop-opacity="${i?'.30':'.10'}"/></linearGradient>`).join('')
+    +'<filter id="fsh" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.5"/></filter></defs>';
+  document.body.appendChild(d);
+}
+function glassDot(x,y,r,fi){
+  frostDefs(); const s=['#cfc8bd','#e2463f','#e0a816','#3b74de','#2fae5f'][fi]||'#cfc8bd';
+  return `<g class="gdot">`+
+    `<ellipse cx="${x+1}" cy="${y+2.7}" rx="${r*1.02}" ry="${r*.9}" fill="${s}" opacity=".34" filter="url(#fsh)"/>`+
+    `<circle cx="${x}" cy="${y+1.5}" r="${r}" fill="${s}" opacity=".92"/>`+
+    `<circle class="gd-base" cx="${x}" cy="${y}" r="${r}"/><circle class="gd-face" cx="${x}" cy="${y}" r="${r}"/>`+
+    `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#ff${fi})"/>`+
+    `<circle cx="${x}" cy="${y}" r="${r-.4}" fill="none" stroke="${s}" stroke-opacity=".85" stroke-width=".8"/>`+
+    `<path d="M${x-r*.78} ${y-r*.2} A${r*.82} ${r*.82} 0 0 1 ${x-r*.05} ${y-r*.8}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width=".7" stroke-linecap="round"/></g>`;
+}
+function glassBar(bx,yb,bw,fi){
+  frostDefs(); const s=['#cfc8bd','#e2463f','#e0a816','#3b74de','#2fae5f'][fi]||'#cfc8bd', h=12.4, r=h/2, y=yb-6.2;
+  return `<g class="gdot">`+
+    `<rect x="${bx+1}" y="${y+2.4}" width="${bw}" height="${h}" rx="${r}" fill="${s}" opacity=".3" filter="url(#fsh)"/>`+
+    `<rect x="${bx}" y="${y+1.5}" width="${bw}" height="${h}" rx="${r}" fill="${s}" opacity=".92"/>`+
+    `<rect class="gd-base" x="${bx}" y="${y}" width="${bw}" height="${h}" rx="${r}"/><rect class="gd-face" x="${bx}" y="${y}" width="${bw}" height="${h}" rx="${r}"/>`+
+    `<rect x="${bx}" y="${y}" width="${bw}" height="${h}" rx="${r}" fill="url(#ff${fi})"/>`+
+    `<rect x="${bx+.4}" y="${y+.4}" width="${bw-.8}" height="${h-.8}" rx="${r-.4}" fill="none" stroke="${s}" stroke-opacity=".85" stroke-width=".8"/>`+
+    `<path d="M${bx+r*.5} ${y+r*.55} Q${bx+r*.7} ${y+1.1} ${bx+r*1.6} ${y+1.05} H${bx+bw*.45}" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".7" stroke-linecap="round"/></g>`;
+}
 
 
 /* =====================================================================
