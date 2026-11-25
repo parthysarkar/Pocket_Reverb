@@ -1047,7 +1047,12 @@ function bgCycle(restart){
   if(restart || key!==bgKey){ bgKey=key; bgIdx=0; } else bgIdx=(bgIdx+1)%list.length;
   showBg(list[bgIdx]);
 }
-function startBg(){ clearInterval(bgTimer); bgCycle(true); bgTimer=setInterval(()=>bgCycle(false),10000); }
+// rest when nobody is using the page: after 2 idle minutes the photo stops changing, so the
+// glass (blurred panel, refracting wordmark, Learn lens) isn't redrawn every 10 s for nothing.
+let bgLastAct=Date.now();
+const BG_IDLE=120000;
+['pointermove','pointerdown','keydown','wheel','touchstart','scroll'].forEach(ev=>addEventListener(ev,()=>{ bgLastAct=Date.now(); },{passive:true,capture:true}));
+function startBg(){ clearInterval(bgTimer); bgCycle(true); bgTimer=setInterval(()=>{ if(Date.now()-bgLastAct<BG_IDLE) bgCycle(false); },10000); }
 document.addEventListener('DOMContentLoaded',startBg);
 new MutationObserver(startBg).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
 portraitMQ.addEventListener?.('change',startBg);
@@ -2353,7 +2358,7 @@ showView(location.hash.slice(1),true);
     for(const [t,e] of opts) if(MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) return [t,e];
     return ['',''];
   }
-  function setReady(){ recBtn.disabled=!(ctx && nodes && nodes.limiter) || !window.MediaRecorder; }
+  function setReady(){ const d=!(ctx && nodes && nodes.limiter) || !window.MediaRecorder; if(recBtn.disabled!==d) recBtn.disabled=d; }   // only touch the page when it changes
   new MutationObserver(()=>{ setReady(); if(!$('power').classList.contains('on') && mr) stopRec(); }).observe($('power'),{attributes:true,attributeFilter:['class']});
   setReady();
   function startRec(){
@@ -2822,6 +2827,7 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
 })();
 
 
+
 /* =====================================================================
    BETA · Frosted acrylic finger dots (no glow)
    A matte, lightly tinted face, a crisp coloured edge, the disc's
@@ -2856,6 +2862,8 @@ function glassBar(bx,yb,bw,fi){
     `<rect x="${bx+.4}" y="${y+.4}" width="${bw-.8}" height="${h-.8}" rx="${r-.4}" fill="none" stroke="${s}" stroke-opacity=".85" stroke-width=".8"/>`+
     `<path d="M${bx+r*.5} ${y+r*.55} Q${bx+r*.7} ${y+1.1} ${bx+r*1.6} ${y+1.05} H${bx+bw*.45}" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".7" stroke-linecap="round"/></g>`;
 }
+
+
 
 
 /* =====================================================================
