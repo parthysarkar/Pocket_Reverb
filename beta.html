@@ -481,25 +481,13 @@
   .cfind input::placeholder{color:var(--sub);opacity:.9}
   .cfind:focus-within{box-shadow:inset 0 0 0 1.5px rgba(30,25,21,.35)} html.dark .cfind:focus-within{box-shadow:inset 0 0 0 1.5px rgba(255,235,210,.35)}
   .cnone{grid-column:1/-1;font-size:13px;color:var(--sub);padding:14px 4px}
-  /* ===== beta: matte frosted finger dots (liquid-glass skill, frosted mode) ===== */
-  .dgw{position:relative;display:block;width:104px;line-height:0}
-  .dgw svg{display:block;width:100%!important;max-width:none!important;height:auto;transform:none!important;overflow:visible}
-  .sgdia .dgw{width:100%}
-  .fd{position:absolute;display:block;border-radius:50%;pointer-events:none;
-    background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='48' height='48' filter='url(%23n)'/%3E%3C/svg%3E") center/24px,
-      color-mix(in srgb,var(--c) 30%,rgba(255,255,255,.34));
-    -webkit-backdrop-filter:blur(2.6px) saturate(1.35);backdrop-filter:blur(2.6px) saturate(1.35);
-    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 78%,rgba(0,0,0,.08)), 0 2px 5px -1px color-mix(in srgb,var(--c) 42%,transparent)}
-  .fd.bar{border-radius:999px}
-  .fd[style*="#ffffff"]{box-shadow:inset 0 0 0 1px rgba(150,140,128,.55), 0 2px 5px -1px rgba(60,50,40,.25)}
-  html.dark .fd{background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='48' height='48' filter='url(%23n)'/%3E%3C/svg%3E") center/24px,
-      color-mix(in srgb,var(--c) 42%,rgba(235,230,222,.14))}
-  .hl i{background:color-mix(in srgb,var(--c) 30%,rgba(255,255,255,.4))!important;-webkit-backdrop-filter:blur(2.6px) saturate(1.35);backdrop-filter:blur(2.6px) saturate(1.35);
-    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 78%,rgba(0,0,0,.08)), 0 2px 5px -1px color-mix(in srgb,var(--c) 42%,transparent)!important}
-  html.dark .hl i{background:color-mix(in srgb,var(--c) 42%,rgba(235,230,222,.14))!important}
-  @media (max-width:760px){ .chord .dgw{width:100%;max-width:96px;transform:translateX(-5%)} }
+  /* ===== beta: frosted acrylic dots ===== */
+  .gd-base{fill:rgba(250,248,245,.6)} html.dark .gd-base{fill:rgba(52,48,45,.95)}
+  .gd-face{fill:rgba(250,248,245,.86)}
+  html.dark .gd-face{fill:rgba(236,231,224,.52)}
+  .hl i{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 10%,rgba(255,255,255,.78)),color-mix(in srgb,var(--c) 42%,rgba(255,255,255,.6)))!important;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 85%,transparent), 0 1.4px 0 color-mix(in srgb,var(--c) 85%,#000 5%), 1px 3px 4px color-mix(in srgb,var(--c) 32%,transparent)!important}
+  html.dark .hl i{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 14%,rgba(236,230,222,.34)),color-mix(in srgb,var(--c) 48%,rgba(236,230,222,.24)))!important}
   /* ===== beta: chords from a song ===== */
   .sgbox{padding:14px 16px 14px;border-radius:22px;background:rgba(255,255,255,.28);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6), 0 10px 24px -16px rgba(40,25,10,.45);margin:clamp(8px,1.6vh,18px) 0 4px}
   html.dark .sgbox{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 1px rgba(255,235,210,.13)}
@@ -2027,11 +2015,8 @@ function diagram(name){
   }
   bars.forEach(br=>{ const yb=y0+(br.fret-base+.5)*rh;
     const bx=sx(br.a)-6.2, bw=sx(br.b)-sx(br.a)+12.4;
-    o+=`<rect x="${bx}" y="${yb-5.4}" width="${bw}" height="12.4" rx="6.2" fill="${FCOL[br.fi]}" opacity=".75" filter="url(#dglow)"/>`;
-    o+=`<rect x="${bx}" y="${yb-6.2}" width="${bw}" height="12.4" rx="6.2" fill="rgba(255,255,255,.52)"/>`;
-    o+=`<rect x="${bx}" y="${yb-6.2}" width="${bw}" height="12.4" rx="6.2" fill="url(#fb${br.fi})"/>`;
-    o+=`<rect x="${bx+.5}" y="${yb-5.7}" width="${bw-1}" height="11.4" rx="5.7" fill="none" stroke="rgba(255,255,255,.95)" stroke-width=".9"/>`;
-    o+=`<rect x="${bx+4}" y="${yb-4.2}" width="${bw-8}" height="1.6" rx=".8" fill="#fff" opacity=".85"/>`; });
+    o+=glassBar(bx,yb,bw,br.fi);
+  });
   f.forEach((v,i)=>{
     const x=sx(i);
     if(v<0){ o+=`<path class="cd-x" stroke-width="1.4" stroke-linecap="round" d="M${x-3.5} ${y0-14.5} l7 7 M${x+3.5} ${y0-14.5} l-7 7"/>`; return; }
@@ -2837,46 +2822,39 @@ const musicSdp=sdp=>sdp.replace(/a=fmtp:(\d+) ([^\r\n]*useinbandfec=1[^\r\n]*)/g
 })();
 
 
-
 /* =====================================================================
-   BETA · Matte frosted finger dots
-   Liquid-glass skill, frosted mode: each dot is a small HTML disc with a
-   real backdrop blur, so the strings and frets behind it go soft and
-   milky, exactly like frosted acrylic. No refraction, no highlight, no
-   glow: a matte tint, a fine grain, a crisp coloured edge and a soft
-   coloured shadow. (backdrop-filter only works on HTML, not SVG shapes,
-   so the dots sit on top of the diagram.)
+   BETA · Frosted acrylic finger dots (no glow)
+   A matte, lightly tinted face, a crisp coloured edge, the disc's
+   coloured side showing underneath and a soft coloured shadow.
    ===================================================================== */
-function diagram(name){
-  const f=parse(CHORDS[name]), fg=[...FINGERS[name]].map(Number), played=f.filter(v=>v>0);
-  const minF=played.length?Math.min(...played):1, maxF=played.length?Math.max(...played):1;
-  const base=maxF<=4?1:minF;
-  const W=104,H=122,x0=26,x1=92,y0=26,rows=4,rh=(H-y0-6)/rows, sx=i=>x0+(x1-x0)*i/5;
-  const pX=v=>(v/W*100).toFixed(2)+'%', pY=v=>(v/H*100).toFixed(2)+'%';
-  const COL=['#ffffff','#f2564f','#f2bd2a','#4c86f0','#3cc46e'];
-  let o=`<svg viewBox="0 0 ${W} ${H}" xmlns="${NS2}">`, dots='';
-  for(let r=0;r<rows;r++) o+=`<text class="cd-num" text-anchor="end" x="${x0-8}" y="${y0+(r+.5)*rh+4}">${base+r}</text>`;
-  o+=`<path class="cd-line" fill="none" stroke-width="1.2" d="M${x0} ${H-4} V${y0+10} Q${x0} ${y0} ${x0+12} ${y0} H${x1-12} Q${x1} ${y0} ${x1} ${y0+10} V${H-4}"/>`;
-  for(let i=1;i<5;i++) o+=`<line class="cd-line" stroke-width="1" x1="${sx(i)}" y1="${y0}" x2="${sx(i)}" y2="${H-4}"/>`;
-  for(let r=1;r<=rows;r++) o+=`<line class="cd-line" stroke-width="1" x1="${x0}" y1="${y0+r*rh}" x2="${x1}" y2="${y0+r*rh}"/>`;
-  if(base===1) o+=`<line class="cd-nut" stroke-width="2.4" stroke-linecap="round" x1="${x0+8}" y1="${y0+.5}" x2="${x1-8}" y2="${y0+.5}"/>`;
-  const bars=[];
-  for(let fi=1;fi<=4;fi++){
-    const idx=f.map((v,i)=>(fg[i]===fi && v>0)?i:-1).filter(i=>i>=0);
-    if(idx.length>=2 && idx.every(i=>f[i]===f[idx[0]])) bars.push({fi,fret:f[idx[0]],a:idx[0],b:idx[idx.length-1]});
-  }
-  bars.forEach(br=>{ const yb=y0+(br.fret-base+.5)*rh, bx=sx(br.a)-6.4, bw=sx(br.b)-sx(br.a)+12.8;
-    dots+=`<i class="fd bar" style="--c:${COL[br.fi]};left:${pX(bx)};top:${pY(yb-6.4)};width:${pX(bw)};height:${pY(12.8)}"></i>`; });
-  f.forEach((v,i)=>{
-    const x=sx(i);
-    if(v<0){ o+=`<path class="cd-x" stroke-width="1.4" stroke-linecap="round" d="M${x-3.5} ${y0-14.5} l7 7 M${x+3.5} ${y0-14.5} l-7 7"/>`; return; }
-    if(v===0){ o+=`<circle class="cd-open" stroke-width="1.3" cx="${x}" cy="${y0-11}" r="3.6"/>`; return; }
-    const fi=fg[i]||1;
-    if(bars.some(br=>br.fi===fi && br.fret===v && i>=br.a && i<=br.b)) return;
-    const y=y0+(v-base+.5)*rh, r=6.6;
-    dots+=`<i class="fd" style="--c:${COL[fi]};left:${pX(x-r)};top:${pY(y-r)};width:${pX(2*r)};height:${pY(2*r)}"></i>`;
-  });
-  return `<span class="dgw">${o}</svg>${dots}</span>`;
+// function declarations are hoisted, so the setup runs on first use, not in order
+function frostDefs(){
+  if(document.getElementById('fsh')) return;
+  const d=document.createElementNS('http://www.w3.org/2000/svg','svg'); d.setAttribute('width',0); d.setAttribute('height',0); d.style.position='absolute';
+  d.innerHTML='<defs>'+['#ffffff','#f2564f','#f2bd2a','#4c86f0','#3cc46e'].map((c,i)=>
+    `<linearGradient id="ff${i}" x1=".15" y1=".05" x2=".85" y2=".95"><stop offset="0" stop-color="${c}" stop-opacity="${i?'.05':'.0'}"/><stop offset="1" stop-color="${c}" stop-opacity="${i?'.30':'.10'}"/></linearGradient>`).join('')
+    +'<filter id="fsh" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.5"/></filter></defs>';
+  document.body.appendChild(d);
+}
+function glassDot(x,y,r,fi){
+  frostDefs(); const s=['#cfc8bd','#e2463f','#e0a816','#3b74de','#2fae5f'][fi]||'#cfc8bd';
+  return `<g class="gdot">`+
+    `<ellipse cx="${x+1}" cy="${y+2.7}" rx="${r*1.02}" ry="${r*.9}" fill="${s}" opacity=".34" filter="url(#fsh)"/>`+
+    `<circle cx="${x}" cy="${y+1.5}" r="${r}" fill="${s}" opacity=".92"/>`+
+    `<circle class="gd-base" cx="${x}" cy="${y}" r="${r}"/><circle class="gd-face" cx="${x}" cy="${y}" r="${r}"/>`+
+    `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#ff${fi})"/>`+
+    `<circle cx="${x}" cy="${y}" r="${r-.4}" fill="none" stroke="${s}" stroke-opacity=".85" stroke-width=".8"/>`+
+    `<path d="M${x-r*.78} ${y-r*.2} A${r*.82} ${r*.82} 0 0 1 ${x-r*.05} ${y-r*.8}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width=".7" stroke-linecap="round"/></g>`;
+}
+function glassBar(bx,yb,bw,fi){
+  frostDefs(); const s=['#cfc8bd','#e2463f','#e0a816','#3b74de','#2fae5f'][fi]||'#cfc8bd', h=12.4, r=h/2, y=yb-6.2;
+  return `<g class="gdot">`+
+    `<rect x="${bx+1}" y="${y+2.4}" width="${bw}" height="${h}" rx="${r}" fill="${s}" opacity=".3" filter="url(#fsh)"/>`+
+    `<rect x="${bx}" y="${y+1.5}" width="${bw}" height="${h}" rx="${r}" fill="${s}" opacity=".92"/>`+
+    `<rect class="gd-base" x="${bx}" y="${y}" width="${bw}" height="${h}" rx="${r}"/><rect class="gd-face" x="${bx}" y="${y}" width="${bw}" height="${h}" rx="${r}"/>`+
+    `<rect x="${bx}" y="${y}" width="${bw}" height="${h}" rx="${r}" fill="url(#ff${fi})"/>`+
+    `<rect x="${bx+.4}" y="${y+.4}" width="${bw-.8}" height="${h-.8}" rx="${r-.4}" fill="none" stroke="${s}" stroke-opacity=".85" stroke-width=".8"/>`+
+    `<path d="M${bx+r*.5} ${y+r*.55} Q${bx+r*.7} ${y+1.1} ${bx+r*1.6} ${y+1.05} H${bx+bw*.45}" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".7" stroke-linecap="round"/></g>`;
 }
 
 
